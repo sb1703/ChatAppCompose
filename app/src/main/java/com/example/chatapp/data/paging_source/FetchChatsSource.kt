@@ -1,6 +1,5 @@
 package com.example.chatapp.data.paging_source
 
-import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.example.chatapp.data.remote.KtorApi
@@ -15,20 +14,17 @@ class FetchChatsSource @Inject constructor(
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Message> {
         return try{
-            Log.d("chatContentDebug","source")
             val apiResponse = ktorApi.fetchChats(
                 request = request
             )
             val messages = apiResponse.listMessages
             if(messages.isNotEmpty()){
-                Log.d("chatContentDebug","messages.isNotEmpty()")
                 return LoadResult.Page(
                     data = messages,
                     prevKey = apiResponse.prevPage,
                     nextKey = apiResponse.nextPage
                 )
             } else{
-                Log.d("chatContentDebug","messages.isEmpty()")
                 return LoadResult.Page(
                     data = emptyList(),
                     prevKey = null,
@@ -36,8 +32,6 @@ class FetchChatsSource @Inject constructor(
                 )
             }
         } catch (e: Exception){
-            Log.d("chatContentDebug","source-error")
-            Log.d("chatContentDebug",e.message.toString())
             LoadResult.Error(e)
         }
     }

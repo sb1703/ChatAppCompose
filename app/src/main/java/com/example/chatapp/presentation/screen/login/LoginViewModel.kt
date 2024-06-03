@@ -52,8 +52,6 @@ class LoginViewModel @Inject constructor(
     }
 
     fun verifyTokenOnBackend(request: ApiRequest) {
-//        Log.d("LoginViewModel", request.tokenId)
-//        request.tokenId?.let { Log.d("debug", it) }
         _apiResponse.value = RequestState.Loading
         try {
             viewModelScope.launch(Dispatchers.IO) {

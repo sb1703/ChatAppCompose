@@ -34,9 +34,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.paging.LoadState
-import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.itemKey
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.chatapp.R
@@ -45,54 +42,11 @@ import com.example.chatapp.domain.model.User
 
 @Composable
 fun ChatContent(
-//    chats: LazyPagingItems<Message>,
     chats: List<Message>,
     currentUser: User,
     currentUserId: String,
     chatUser: User
 ) {
-//    val result = handlePagingResult(chats = chats)
-//    Log.d("chatContentDebug","MainContent")
-//    Log.d("chatContentDebug",chats.loadState.toString())
-//    Log.d("chatContentDebug",result.toString())
-
-//    if(result) {
-//        LazyColumn(
-//            modifier = Modifier.fillMaxSize()
-//        ){
-//            items(
-//                count = chats.itemCount,
-//                key = chats.itemKey { it.messageId!! }
-//            ){ index ->
-//                chats[index]?.let {
-//                    Log.d("chatContentDebug",it.author.toString())
-//                    Log.d("chatContentDebug",currentUser.name)
-//                    if(it.author == currentUser.userId){
-//                        it.messageText?.let { it1 ->
-//                            ChatItem(
-//                                text = it1,
-//                                onSendClicked = { /*TODO*/ },
-//                                dateTime = it.time
-//                            )
-//                        } ?: Log.d("chatContentDebug","messageText null")
-//                    } else {
-//                        it.messageText?.let { it1 ->
-//                            OppChatItem(
-//                                text = it1,
-//                                onSendClicked = { /*TODO*/ },
-//                                author = chatUser.name,
-//                                profilePhoto = chatUser.profilePhoto,
-//                                dateTime = it.time
-//                            )
-//                        } ?: Log.d("chatContentDebug","messageText null")
-//                    }
-//                }
-//            }
-//        }
-//    }
-//    Log.d("debugging",chats.isEmpty().toString())
-    Log.d("debugging",chats.size.toString())
-    Log.d("debugging",chats.toString())
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         reverseLayout = true
@@ -101,12 +55,8 @@ fun ChatContent(
             count = chats.size
         ){ index ->
             chats[index]?.let {
-                Log.d("debugging","author: ${it.author.toString()}")
-//                Log.d("chatContentDebug","currentUser_name: ${currentUser.name}")
-                Log.d("debugging","currentUser_userId: $currentUserId")
                 if(it.author == currentUserId){
                     it.messageText?.let { it1 ->
-                        Log.d("debugging","ChatItem")
                         ChatItem(
                             text = it1,
                             onSendClicked = { /*TODO*/ },
@@ -115,7 +65,6 @@ fun ChatContent(
                     } ?: Log.d("debugging","messageText null")
                 } else {
                     it.messageText?.let { it1 ->
-                        Log.d("debugging","OppChatItem")
                         OppChatItem(
                             text = it1,
                             onSendClicked = { /*TODO*/ },
@@ -126,42 +75,6 @@ fun ChatContent(
                     } ?: Log.d("debugging","messageText null")
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun handlePagingResult(
-    chats: LazyPagingItems<Message>
-): Boolean {
-    chats.apply {
-        Log.d("chatContentDebug","HandlePagingResult")
-        val error = when{
-            loadState.refresh is LoadState.Error -> loadState.refresh as LoadState.Error
-            loadState.prepend is LoadState.Error -> loadState.prepend as LoadState.Error
-            loadState.append is LoadState.Error -> loadState.append as LoadState.Error
-            else -> null
-        }
-
-        Log.d("chatContentDebug",error.toString())
-
-        return when{
-            loadState.refresh is LoadState.Loading -> {
-                Log.d("chatContentDebug","ShimmerEffect")
-//                ShimmerEffect()
-                false
-            }
-            error != null -> {
-                Log.d("chatContentDebug","error!=null")
-//                EmptyScreen(error = error,heroes = heroes)
-                false
-            }
-            chats.itemCount < 1 -> {
-                Log.d("chatContentDebug","itemCount < 1")
-//                EmptyScreen()
-                false
-            }
-            else -> true
         }
     }
 }

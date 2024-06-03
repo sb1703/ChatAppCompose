@@ -11,7 +11,6 @@ data class User(
     val name: String = "",
     val emailAddress: String = "",
     val profilePhoto: String = "",
-//    val list: List<User> = emptyList(),
     val list: List<String> = emptyList(),
     val online: Boolean = false,
     val lastLogin: String? = null,

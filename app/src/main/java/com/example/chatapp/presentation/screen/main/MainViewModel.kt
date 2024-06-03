@@ -1,7 +1,5 @@
 package com.example.chatapp.presentation.screen.main
 
-import android.util.Log
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -15,7 +13,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -23,9 +20,6 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val repository: Repository
 ): ViewModel() {
-
-//    private val _searchQuery = mutableStateOf("")
-//    val searchQuery = _searchQuery
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
@@ -36,14 +30,8 @@ class MainViewModel @Inject constructor(
     private val _searchedUser = MutableStateFlow<PagingData<User>>(PagingData.empty())
     val searchedUser = _searchedUser
 
-//    private val _currentUser = mutableStateOf(User())
-//    val currentUser = _currentUser
-
     private val _currentUser = MutableStateFlow(User())
     val currentUser = _currentUser.asStateFlow()
-
-//    private val _lastMessage = mutableStateOf(Message())
-//    val lastMessage = _lastMessage
 
     private val _lastMessage = MutableStateFlow<Message?>(Message())
     val lastMessage = _lastMessage.asStateFlow()
@@ -53,13 +41,6 @@ class MainViewModel @Inject constructor(
 
     private val _chatId = MutableStateFlow("")
     val chatId = _chatId.asStateFlow()
-
-//    init {
-//        fetchUsers()
-//        Log.d("helloWorld","init")
-//        getCurrentUser()
-//        Log.d("helloWorld","a-init")
-//    }
 
     fun updateSearchQuery(query: String){
         _searchQuery.value = query
@@ -73,15 +54,9 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             _currentUser.value = repository.getUserInfo().user!!
         }
-//        _currentUser.value = repository.getUserInfo().user!!
     }
 
     suspend fun fetchUsers(){
-//        viewModelScope.launch(Dispatchers.IO) {
-//            repository.fetchUsers().cachedIn(viewModelScope).collect{
-//                _fetchedUser.value = it
-//            }
-//        }
         repository.fetchUsers().cachedIn(viewModelScope).collect{
             _fetchedUser.value = it
         }
@@ -114,19 +89,6 @@ class MainViewModel @Inject constructor(
     }
 
     suspend fun setOnlineTrue() {
-        Log.d("debugging","SetOnlineTrue")
-//        viewModelScope.launch(Dispatchers.IO) {
-//            currentUser.value?.let {
-//                UserUpdate(
-//                    name = it.name,
-//                    online = true
-//                )
-//            }?.let {
-//                repository.updateUser(
-//                    userUpdate = it
-//                )
-//            }
-//        }
         currentUser.value?.let {
             UserUpdate(
                 name = it.name,
@@ -137,23 +99,9 @@ class MainViewModel @Inject constructor(
                 userUpdate = it
             )
         }
-        Log.d("debugging","SetOnlineTrueDone!")
     }
 
     suspend fun setOnlineFalse() {
-        Log.d("debugging","SetOnlineFalse")
-//        viewModelScope.launch(Dispatchers.IO) {
-//            currentUser.value?.let {
-//                UserUpdate(
-//                    name = it.name,
-//                    online = false
-//                )
-//            }?.let {
-//                repository.updateUser(
-//                    userUpdate = it
-//                )
-//            }
-//        }
         currentUser.value?.let {
             UserUpdate(
                 name = it.name,
@@ -164,7 +112,6 @@ class MainViewModel @Inject constructor(
                 userUpdate = it
             )
         }
-        Log.d("debugging","SetOnlineFalseDone!")
     }
 
 }

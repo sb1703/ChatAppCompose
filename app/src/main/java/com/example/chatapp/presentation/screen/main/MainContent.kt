@@ -1,18 +1,15 @@
 package com.example.chatapp.presentation.screen.main
 
 import android.util.Log
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -37,8 +34,6 @@ import coil.request.ImageRequest
 import com.example.chatapp.R
 import com.example.chatapp.domain.model.Message
 import com.example.chatapp.domain.model.User
-import kotlinx.datetime.toLocalDateTime
-import kotlinx.datetime.toLocalTime
 
 @Composable
 fun MainContent(
@@ -52,11 +47,6 @@ fun MainContent(
 
     val result = handlePagingResult(users = users)
     val searchedResult = handlePagingResult(users = searchedUsers)
-    Log.d("ListContent","MainContent")
-    Log.d("ListContent",users.loadState.toString())
-    Log.d("ListContent",searchedUsers.loadState.toString())
-    Log.d("ListContent",result.toString())
-    Log.d("ListContent",searchedResult.toString())
     if(searchQuery == "") {
         if(result) {
             UserList(
@@ -65,56 +55,6 @@ fun MainContent(
                 fetchLastMessage = fetchLastMessage,
                 getAuthorName = getAuthorName
             )
-//            LazyColumn(
-//                modifier = Modifier.fillMaxSize()
-//            ){
-//                items(
-//                    count = users.itemCount,
-//                    key = users.itemKey { it.userId!! }
-//                ){ index ->
-//                    users[index]?.let {
-//                        it.userId?.let { it1 ->
-//                            val message = fetchLastMessage(it1)
-//                            val authorName = message?.author?.let { it2 -> getAuthorName(it2) }
-//                            Log.d("lastMessageDebug",message.toString())
-//                            if(message?.messageText != null) {
-//                                Log.d("lastMessageDebug","message-not-null")
-//                                Log.d("lastMessageDebug","message-text-not-null")
-//                                UserItem(
-//                                    title = it.name,
-//                                    description = "${authorName}: ${message.messageText}",
-//                                    time = message.time,
-//                                    isUnread = true,
-//                                    imageUri = it.profilePhoto,
-//                                    navigationToChatScreen = { string ->
-//                                        it.userId.let { it1 ->
-//                                            navigationToChatScreen(
-//                                                it1
-//                                            )
-//                                        }
-//                                    }
-//                                )
-//                            } else {
-//                                Log.d("lastMessageDebug","message-null or message-text-null")
-//                                UserItem(
-//                                    title = it.name,
-//                                    description = "",
-//                                    time = "",
-//                                    isUnread = true,
-//                                    imageUri = it.profilePhoto,
-//                                    navigationToChatScreen = { string ->
-//                                        it.userId.let { it1 ->
-//                                            navigationToChatScreen(
-//                                                it1
-//                                            )
-//                                        }
-//                                    }
-//                                )
-//                            }
-//                        }
-//                    }
-//                }
-//            }
         }
     } else {
         if(searchedResult) {
@@ -124,56 +64,6 @@ fun MainContent(
                 fetchLastMessage = fetchLastMessage,
                 getAuthorName = getAuthorName
             )
-//            LazyColumn(
-//                modifier = Modifier.fillMaxSize()
-//            ){
-//                items(
-//                    count = searchedUsers.itemCount,
-//                    key = searchedUsers.itemKey { it.userId!! }
-//                ){ index ->
-//                    searchedUsers[index]?.let {
-//                        it.userId?.let { it1 ->
-//                            val message = fetchLastMessage(it1)
-//                            val authorName = message?.author?.let { it2 -> getAuthorName(it2) }
-//                            Log.d("lastMessageDebug",message.toString())
-//                            if(message?.messageText != null) {
-//                                Log.d("lastMessageDebug","message-not-null")
-//                                Log.d("lastMessageDebug","message-text-not-null")
-//                                UserItem(
-//                                    title = it.name,
-//                                    description = "${authorName}: ${message.messageText}",
-//                                    time = message.time,
-//                                    isUnread = true,
-//                                    imageUri = it.profilePhoto,
-//                                    navigationToChatScreen = { string ->
-//                                        it.userId.let { it1 ->
-//                                            navigationToChatScreen(
-//                                                it1
-//                                            )
-//                                        }
-//                                    }
-//                                )
-//                            } else {
-//                                Log.d("lastMessageDebug","message-null or message-text-null")
-//                                UserItem(
-//                                    title = it.name,
-//                                    description = "",
-//                                    time = "",
-//                                    isUnread = true,
-//                                    imageUri = it.profilePhoto,
-//                                    navigationToChatScreen = { string ->
-//                                        it.userId.let { it1 ->
-//                                            navigationToChatScreen(
-//                                                it1
-//                                            )
-//                                        }
-//                                    }
-//                                )
-//                            }
-//                        }
-//                    }
-//                }
-//            }
         }
     }
 }
@@ -196,10 +86,7 @@ fun UserList(
                 it.userId?.let { it1 ->
                     val message = fetchLastMessage(it1)
                     val authorName = message?.author?.let { it2 -> getAuthorName(it2) }
-                    Log.d("lastMessageDebug",message.toString())
                     if(message?.messageText != null) {
-                        Log.d("lastMessageDebug","message-not-null")
-                        Log.d("lastMessageDebug","message-text-not-null")
                         UserItem(
                             title = it.name,
                             description = "${authorName}: ${message.messageText}",
@@ -215,7 +102,6 @@ fun UserList(
                             }
                         )
                     } else {
-                        Log.d("lastMessageDebug","message-null or message-text-null")
                         UserItem(
                             title = it.name,
                             description = "",
@@ -242,15 +128,12 @@ fun handlePagingResult(
     users: LazyPagingItems<User>
 ): Boolean {
     users.apply {
-        Log.d("ListContent","HandlePagingResult")
         val error = when{
             loadState.refresh is LoadState.Error -> loadState.refresh as LoadState.Error
             loadState.prepend is LoadState.Error -> loadState.prepend as LoadState.Error
             loadState.append is LoadState.Error -> loadState.append as LoadState.Error
             else -> null
         }
-
-        Log.d("ListContent",error.toString())
 
         return when{
             loadState.refresh is LoadState.Loading -> {

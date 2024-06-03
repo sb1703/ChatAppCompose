@@ -19,10 +19,8 @@ interface Repository {
     suspend fun clearSession(): ApiResponse
     suspend fun addChats(request: ApiRequest): ApiResponse
     suspend fun addUsers(request: ApiRequest): ApiResponse
-//    suspend fun fetchChats(request: ApiRequest): Flow<PagingData<Message>>
     suspend fun fetchChats(request: ApiRequest): ApiResponse
     suspend fun fetchLastChat(request: ApiRequest): ApiResponse
-//    suspend fun fetchUsers(page: Int,limit: Int): Flow<PagingData<User>>
     suspend fun fetchUsers(): Flow<PagingData<User>>
     suspend fun searchUsers(request: ApiRequest): Flow<PagingData<User>>
 }

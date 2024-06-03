@@ -1,6 +1,5 @@
 package com.example.chatapp.presentation.screen.profile
 
-import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -21,20 +20,12 @@ fun ProfileScreen(
     mainViewModel: MainViewModel
 ) {
 
-//    LaunchedEffect(key1 = true) {
-//        Log.d("profileDebug","getCurrentUser()")
-//        profileViewModel.getCurrentUser()
-//    }
-
     val nameQuery = profileViewModel.nameQuery.collectAsState()
     val currentUser = mainViewModel.currentUser.collectAsState()
     val isReadOnly = profileViewModel.isReadOnly.collectAsState()
 
     LaunchedEffect(key1 = true) {
-        Log.d("profileDebug","updateName()")
         profileViewModel.updateName(currentUser.value.name)
-        Log.d("profileDebug",currentUser.value.name)
-        Log.d("profileDebug",nameQuery.value)
     }
 
     Scaffold(

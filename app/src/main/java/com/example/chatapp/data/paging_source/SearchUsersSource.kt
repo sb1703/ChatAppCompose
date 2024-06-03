@@ -9,16 +9,12 @@ import javax.inject.Inject
 
 class SearchUsersSource @Inject constructor(
     private val ktorApi: KtorApi,
-//    private val page: Int,
-//    private val limit: Int,
     private val request: ApiRequest
 ): PagingSource<Int,User>() {
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, User> {
         return try{
             val apiResponse = ktorApi.searchUsers(
-//                page = page,
-//                limit = limit,
                 request = request
             )
             val users = apiResponse.listUsers
