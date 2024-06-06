@@ -5,6 +5,7 @@ import com.example.chatapp.domain.model.ApiRequest
 import com.example.chatapp.domain.model.ApiResponse
 import com.example.chatapp.domain.model.Message
 import com.example.chatapp.domain.model.User
+import com.example.chatapp.domain.model.UserItem
 import com.example.chatapp.domain.model.UserUpdate
 import kotlinx.coroutines.flow.Flow
 
@@ -21,6 +22,7 @@ interface Repository {
     suspend fun addUsers(request: ApiRequest): ApiResponse
     suspend fun fetchChats(request: ApiRequest): ApiResponse
     suspend fun fetchLastChat(request: ApiRequest): ApiResponse
-    suspend fun fetchUsers(): Flow<PagingData<User>>
-    suspend fun searchUsers(request: ApiRequest): Flow<PagingData<User>>
+//    suspend fun fetchUsers(): Flow<PagingData<User>>
+    suspend fun fetchUsers(): ApiResponse
+    suspend fun searchUsers(request: ApiRequest): Flow<PagingData<UserItem>>
 }

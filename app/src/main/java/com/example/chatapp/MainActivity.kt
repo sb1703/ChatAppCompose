@@ -35,24 +35,24 @@ class MainActivity : ComponentActivity() {
                 SetupNavGraph(
                     navController = navController,
                     mainViewModel = mainViewModel,
-                    destroyCalled = {
-                        onDestroy()
-                    }
+//                    destroyCalled = {
+//                        onDestroy()
+//                    }
                 )
             }
         }
     }
 
     override fun onDestroy() {
+        super.onDestroy()
         if(isLoggedIn) {
-            Log.d("debugging","Destroying & settingOnlineFalse")
+            Log.d("debugging2","Destroying & settingOnlineFalse")
             lifecycleScope.launch {
                 mainViewModel.setOnlineFalse()
+                mainViewModel.disconnect()
             }
-            super.onDestroy()
         } else {
-            Log.d("debugging","Destroying")
-            super.onDestroy()
+            Log.d("debugging2","Destroying")
         }
     }
 }

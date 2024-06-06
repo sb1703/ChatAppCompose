@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,34 +35,30 @@ import coil.request.ImageRequest
 import com.example.chatapp.R
 import com.example.chatapp.domain.model.Message
 import com.example.chatapp.domain.model.User
+import com.example.chatapp.domain.model.UserItem
+import com.example.chatapp.domain.model.UserListData
 
 @Composable
 fun MainContent(
-    users: LazyPagingItems<User>,
-    searchedUsers: LazyPagingItems<User>,
+    users: List<UserItem>,
+    searchedUsers: LazyPagingItems<UserItem>,
     searchQuery: String,
     navigationToChatScreen: (String) -> Unit,
-    fetchLastMessage: (String) -> Message?,
     getAuthorName: (String) -> String
 ) {
 
-    val result = handlePagingResult(users = users)
     val searchedResult = handlePagingResult(users = searchedUsers)
     if(searchQuery == "") {
-        if(result) {
-            UserList(
-                users = users,
-                navigationToChatScreen = navigationToChatScreen,
-                fetchLastMessage = fetchLastMessage,
-                getAuthorName = getAuthorName
-            )
-        }
+        UserList(
+            userListData = UserListData.RegularData(users = users),
+            navigationToChatScreen = navigationToChatScreen,
+            getAuthorName = getAuthorName
+        )
     } else {
         if(searchedResult) {
             UserList(
-                users = searchedUsers,
+                userListData = UserListData.PagingData(users = searchedUsers),
                 navigationToChatScreen = navigationToChatScreen,
-                fetchLastMessage = fetchLastMessage,
                 getAuthorName = getAuthorName
             )
         }
@@ -70,53 +67,123 @@ fun MainContent(
 
 @Composable
 fun UserList(
-    users: LazyPagingItems<User>,
+    userListData: UserListData,
     navigationToChatScreen: (String) -> Unit,
-    fetchLastMessage: (String) -> Message?,
     getAuthorName: (String) -> String
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize()
     ){
-        items(
-            count = users.itemCount,
-            key = users.itemKey { it.userId!! }
-        ){ index ->
-            users[index]?.let {
-                it.userId?.let { it1 ->
-                    val message = fetchLastMessage(it1)
-                    val authorName = message?.author?.let { it2 -> getAuthorName(it2) }
-                    if(message?.messageText != null) {
-                        UserItem(
-                            title = it.name,
-                            description = "${authorName}: ${message.messageText}",
-                            time = message.time,
-                            isUnread = true,
-                            imageUri = it.profilePhoto,
-                            navigationToChatScreen = { string ->
-                                it.userId.let { it1 ->
-                                    navigationToChatScreen(
-                                        it1
-                                    )
-                                }
+        when(userListData) {
+            is UserListData.PagingData -> {
+                items(
+                    count = userListData.users.itemCount,
+                    key = userListData.users.itemKey { it.userId!! }
+                ){ index ->
+                    userListData.users[index]?.let {
+                        it.userId?.let { it1 ->
+                            val message = it.lastMessage
+                            val authorName = message?.author?.let { it2 -> getAuthorName(it2) }
+                            if(message?.messageText != null) {
+                                UserItem(
+                                    title = it.name,
+                                    description = "${authorName}: ${message.messageText}",
+                                    time = message.time,
+                                    isUnread = true,
+                                    imageUri = it.profilePhoto,
+                                    navigationToChatScreen = { string ->
+                                        it.userId.let { it1 ->
+                                            navigationToChatScreen(
+                                                it1
+                                            )
+                                        }
+                                    }
+                                )
+                            } else {
+                                UserItem(
+                                    title = it.name,
+                                    description = "",
+                                    time = "",
+                                    isUnread = true,
+                                    imageUri = it.profilePhoto,
+                                    navigationToChatScreen = { string ->
+                                        it.userId.let { it1 ->
+                                            navigationToChatScreen(
+                                                it1
+                                            )
+                                        }
+                                    }
+                                )
                             }
-                        )
-                    } else {
-                        UserItem(
-                            title = it.name,
-                            description = "",
-                            time = "",
-                            isUnread = true,
-                            imageUri = it.profilePhoto,
-                            navigationToChatScreen = { string ->
-                                it.userId.let { it1 ->
-                                    navigationToChatScreen(
-                                        it1
-                                    )
-                                }
-                            }
-                        )
+                        }
                     }
+                }
+            }
+            is UserListData.RegularData -> {
+                items(
+                    count = userListData.users.size,
+                    key = { userListData.users[it].userId!! }
+                ) { index ->
+                    val user = userListData.users[index]
+
+                    if(user.isTyping) {
+                        Log.d("lazyColumnTyping", "isTyping: ${user.name}")
+                    }
+
+                    val message = user.lastMessage
+                    val authorName = message?.author?.let { getAuthorName(it) }
+                    Log.d("lazyColumn", "userId: ${user.userId}")
+
+                    UserItem(
+                        title = user.name,
+                        description = "${authorName}: ${message?.messageText.orEmpty()}",
+                        time = message?.time.orEmpty(),
+                        isUnread = true,
+                        imageUri = user.profilePhoto,
+                        navigationToChatScreen = { user.userId?.let { it1 ->
+                            navigationToChatScreen(
+                                it1
+                            )
+                        } }
+                    )
+//                    userListData.users[index].let {
+//                        it.userId?.let { it1 ->
+//                            Log.d("lazyColumn","userId: $it1")
+//                            val message = it.lastMessage
+//                            val authorName = message?.author?.let { it2 -> getAuthorName(it2) }
+//                            if(message?.messageText != null) {
+//                                UserItem(
+//                                    title = it.name,
+//                                    description = "${authorName}: ${message.messageText}",
+//                                    time = message.time,
+//                                    isUnread = true,
+//                                    imageUri = it.profilePhoto,
+//                                    navigationToChatScreen = { string ->
+//                                        it.userId.let { it1 ->
+//                                            navigationToChatScreen(
+//                                                it1
+//                                            )
+//                                        }
+//                                    }
+//                                )
+//                            } else {
+//                                UserItem(
+//                                    title = it.name,
+//                                    description = "",
+//                                    time = "",
+//                                    isUnread = true,
+//                                    imageUri = it.profilePhoto,
+//                                    navigationToChatScreen = { string ->
+//                                        it.userId.let { it1 ->
+//                                            navigationToChatScreen(
+//                                                it1
+//                                            )
+//                                        }
+//                                    }
+//                                )
+//                            }
+//                        }
+//                    }
                 }
             }
         }
@@ -125,7 +192,7 @@ fun UserList(
 
 @Composable
 fun handlePagingResult(
-    users: LazyPagingItems<User>
+    users: LazyPagingItems<UserItem>
 ): Boolean {
     users.apply {
         val error = when{

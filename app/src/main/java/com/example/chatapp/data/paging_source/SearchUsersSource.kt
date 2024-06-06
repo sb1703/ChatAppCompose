@@ -5,19 +5,35 @@ import androidx.paging.PagingState
 import com.example.chatapp.data.remote.KtorApi
 import com.example.chatapp.domain.model.ApiRequest
 import com.example.chatapp.domain.model.User
+import com.example.chatapp.domain.model.UserItem
 import javax.inject.Inject
 
 class SearchUsersSource @Inject constructor(
     private val ktorApi: KtorApi,
     private val request: ApiRequest
-): PagingSource<Int,User>() {
+): PagingSource<Int, UserItem>() {
 
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, User> {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, UserItem> {
         return try{
             val apiResponse = ktorApi.searchUsers(
                 request = request
             )
-            val users = apiResponse.listUsers
+            val users = apiResponse.listUsers.map {
+                UserItem(
+                    id = it.id,
+                    userId = it.userId,
+                    name = it.name,
+                    emailAddress = it.emailAddress,
+                    profilePhoto = it.profilePhoto,
+                    list = it.list,
+                    online = it.online,
+                    lastLogin = it.lastLogin,
+                    socket = it.socket,
+                    isTyping = false,
+                    lastMessage = ktorApi.fetchLastChat(request = ApiRequest(
+                        userId = it.userId
+                    )).chat
+                )}
             if(users.isNotEmpty()){
                 return LoadResult.Page(
                     data = users,
@@ -36,7 +52,7 @@ class SearchUsersSource @Inject constructor(
         }
     }
 
-    override fun getRefreshKey(state: PagingState<Int, User>): Int? {
+    override fun getRefreshKey(state: PagingState<Int, UserItem>): Int? {
         return state.anchorPosition
     }
 

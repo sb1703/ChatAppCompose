@@ -18,7 +18,7 @@ import com.example.chatapp.util.Constants.CHAT_USER_ID
 fun SetupNavGraph(
     navController: NavHostController,
     mainViewModel: MainViewModel,
-    destroyCalled: () -> Unit
+//    destroyCalled: () -> Unit
 ) {
     NavHost(
         navController = navController,

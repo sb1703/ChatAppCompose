@@ -22,12 +22,17 @@ fun MainScreen(
     LaunchedEffect(key1 = true) {
         mainViewModel.getCurrentUser()
         mainViewModel.fetchUsers()
-        mainViewModel.setOnlineTrue()
     }
 
-    val users = mainViewModel.fetchedUser.collectAsLazyPagingItems()
-    val searchedUsers = mainViewModel.searchedUser.collectAsLazyPagingItems()
     val currentUser = mainViewModel.currentUser.collectAsState()
+    LaunchedEffect(key1 = currentUser.value.userId) {
+        if (currentUser.value.userId != null) {
+            mainViewModel.connectToChat()
+        }
+    }
+
+    val users = mainViewModel.fetchedUser.collectAsState()
+    val searchedUsers = mainViewModel.searchedUser.collectAsLazyPagingItems()
     val searchQuery = mainViewModel.searchQuery.collectAsState()
 
     Scaffold(
@@ -51,23 +56,17 @@ fun MainScreen(
                     .padding(paddingValue)
             ) {
                 MainContent(
-                    users = users,
+                    users = users.value,
                     searchedUsers = searchedUsers,
                     searchQuery = searchQuery.value,
                     navigationToChatScreen = {
                         navController.navigate(Screen.Chat.passId(id = it))
                     },
-                    fetchLastMessage = { userId ->
-                        mainViewModel.updateChatId(userId)
-                        mainViewModel.getUserInfoByUserId()
-                        mainViewModel.fetchLastChat(userId)
-                        mainViewModel.lastMessage.value
-                    },
                     getAuthorName = { authorUserId ->
                         if(authorUserId == currentUser.value.userId) {
                             "You"
                         } else {
-                            mainViewModel.chatUser.value.name
+                            users.value.find { it.userId == authorUserId }?.name ?: ""
                         }
                     }
                 )

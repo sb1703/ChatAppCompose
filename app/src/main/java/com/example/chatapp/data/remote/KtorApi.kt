@@ -39,11 +39,14 @@ interface KtorApi {
         @Body request: ApiRequest
     ): ApiResponse
 
+//    @GET("/fetch_users")
+//    suspend fun fetchUsers(
+//        @Query("page") page: Int = 1,
+//        @Query("limit") limit: Int = 12
+//    ): ApiResponse
+
     @GET("/fetch_users")
-    suspend fun fetchUsers(
-        @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 12
-    ): ApiResponse
+    suspend fun fetchUsers(): ApiResponse
 
     @POST("/search_users")
     suspend fun searchUsers(

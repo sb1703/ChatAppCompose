@@ -12,6 +12,7 @@ import com.example.chatapp.domain.model.ApiRequest
 import com.example.chatapp.domain.model.ApiResponse
 import com.example.chatapp.domain.model.Message
 import com.example.chatapp.domain.model.User
+import com.example.chatapp.domain.model.UserItem
 import com.example.chatapp.domain.model.UserUpdate
 import com.example.chatapp.domain.repository.DataStoreOperations
 import com.example.chatapp.domain.repository.RemoteDataSource
@@ -147,11 +148,12 @@ class RepositoryImpl @Inject constructor(
 ////        }
 //    }
 
-    override suspend fun fetchUsers(): Flow<PagingData<User>> {
-        return remote.fetchUsers()
+    override suspend fun fetchUsers(): ApiResponse {
+//        return remote.fetchUsers()
+        return ktorApi.fetchUsers()
     }
 
-    override suspend fun searchUsers(request: ApiRequest): Flow<PagingData<User>> {
+    override suspend fun searchUsers(request: ApiRequest): Flow<PagingData<UserItem>> {
         return remote.searchUsers(request = request)
     }
 
