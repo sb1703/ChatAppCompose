@@ -46,9 +46,26 @@ class MainViewModel @Inject constructor(
     private val _currentUser = MutableStateFlow(User())
     val currentUser = _currentUser.asStateFlow()
 
+    init {
+        Log.d("debugging2","before getCurrentUser main")
+        getCurrentUser()
+        Log.d("debugging2","after getCurrentUser main")
+        viewModelScope.launch {
+            _currentUser.collectLatest {
+                if(it.userId != null) {
+                    Log.d("debugging2","before fetchUsers")
+                    fetchUsers()
+                    Log.d("debugging2","before connectToChat userId: ${it.userId} connected main")
+                    connectToChat()
+                    Log.d("debugging2","after connectToChat userId: ${it.userId} connected main")
+                }
+            }
+        }
+    }
+
     fun connectToChat() {
         viewModelScope.launch {
-            Log.d("debugging2","userId: ${currentUser.value.userId} connected")
+            Log.d("debugging2","userId: ${currentUser.value.userId} connected main")
             val result = currentUser.value.userId?.let { chatSocketService.initSession(it) }
             chatSocketService.sendOnline(true)
             when(result) {
@@ -81,19 +98,21 @@ class MainViewModel @Inject constructor(
     }
 
     private suspend fun handleMessageEvent(chatEvent: ChatEvent.MessageEvent) {
-        Log.d("message", "message: ${chatEvent.receiverUserIds[0]} - ${chatEvent.messageText}")
-        val user = fetchedUser.value.find { it.userId == chatEvent.receiverUserIds[0] }
-        val newList = fetchedUser.value.filter { it.userId != chatEvent.receiverUserIds[0] }
-        val newUser = user?.copy(
-            lastMessage = Message(
-                author = chatEvent.receiverUserIds[0],
-                messageText = chatEvent.messageText,
-                receiver = listOf(currentUser.value.userId)
+        withContext(Dispatchers.IO) {
+            Log.d("message", "message: ${chatEvent.receiverUserIds[0]} - ${chatEvent.messageText} main")
+            val user = fetchedUser.value.find { it.userId == chatEvent.receiverUserIds[0] }
+            val newList = fetchedUser.value.filter { it.userId != chatEvent.receiverUserIds[0] }
+            val newUser = user?.copy(
+                lastMessage = Message(
+                    author = chatEvent.receiverUserIds[0],
+                    messageText = chatEvent.messageText,
+                    receiver = listOf(currentUser.value.userId)
+                )
             )
-        )
-        if(newUser != null){
-            Log.d("message", "newMessageList: ${chatEvent.receiverUserIds[0]}")
-            _fetchedUser.value = listOf(newUser) + newList
+            if(newUser != null){
+                Log.d("message", "newMessageList: ${chatEvent.receiverUserIds[0]}")
+                _fetchedUser.value = listOf(newUser) + newList
+            }
         }
 
 //        val newList = fetchedUser.value.toMutableList().apply {
@@ -117,59 +136,63 @@ class MainViewModel @Inject constructor(
     }
 
     private suspend fun handleTypingEvent(chatEvent: ChatEvent.TypingEvent) {
-        Log.d("typing", "typing: ${chatEvent.receiverUserIds[0]} typing...")
-        fetchedUser.value.forEachIndexed { index, userItem ->
-            if(userItem.userId == chatEvent.receiverUserIds[0]){
-                userItem.typingJob?.cancel()
-                val newUser = userItem.copy(
-                    isTyping = true,
-                    lastMessage = Message(
-                        author = chatEvent.receiverUserIds[0],
-                        messageText = chatEvent.typingText,
-                        receiver = listOf(currentUser.value.userId)
-                    ),
-                    typingJob = viewModelScope.launch {
-                        delay(1000) // Delay for 1 seconds
-                        val newUser2 = userItem.copy(
-                            isTyping = false,
-                            lastMessage = repository.fetchLastChat(request = ApiRequest(
-                                userId = userItem.userId
-                            )).chat
-                        )
-                        val newList = fetchedUser.value.toMutableList().apply {
-                            set(index,newUser2)
+        withContext(Dispatchers.IO) {
+            Log.d("typing", "typing: ${chatEvent.receiverUserIds[0]} typing...")
+            fetchedUser.value.forEachIndexed { index, userItem ->
+                if(userItem.userId == chatEvent.receiverUserIds[0]){
+                    userItem.typingJob?.cancel()
+                    val newUser = userItem.copy(
+                        isTyping = true,
+                        lastMessage = Message(
+                            author = chatEvent.receiverUserIds[0],
+                            messageText = chatEvent.typingText,
+                            receiver = listOf(currentUser.value.userId)
+                        ),
+                        typingJob = viewModelScope.launch {
+                            delay(1000) // Delay for 1 seconds
+                            val newUser2 = userItem.copy(
+                                isTyping = false,
+                                lastMessage = repository.fetchLastChat(request = ApiRequest(
+                                    userId = userItem.userId
+                                )).chat
+                            )
+                            val newList = fetchedUser.value.toMutableList().apply {
+                                set(index,newUser2)
+                            }
+                            _fetchedUser.value = newList
                         }
-                        _fetchedUser.value = newList
+                    )
+                    val newList = fetchedUser.value.toMutableList().apply {
+                        set(index,newUser)
                     }
-                )
-                val newList = fetchedUser.value.toMutableList().apply {
-                    set(index,newUser)
+                    Log.d("typing", "newTypingList: ${chatEvent.receiverUserIds[0]}")
+                    _fetchedUser.value = newList
                 }
-                Log.d("typing", "newTypingList: ${chatEvent.receiverUserIds[0]}")
-                _fetchedUser.value = newList
             }
         }
     }
 
     private suspend fun handleListEvent(chatEvent: ChatEvent.ListEvent) {
-        Log.d("list", "list: ${chatEvent.receiverUserIds[0]}")
-        val newUser = repository.getUserInfoById(request = ApiRequest(userId = chatEvent.receiverUserIds[0])).user!!
-        val newUserItem = UserItem(
-            id = newUser.id,
-            userId = newUser.userId,
-            name = newUser.name,
-            emailAddress = newUser.emailAddress,
-            profilePhoto = newUser.profilePhoto,
-            list = newUser.list,
-            online = newUser.online,
-            lastLogin = newUser.lastLogin,
-            socket = newUser.socket,
-            isTyping = false,
-            lastMessage = repository.fetchLastChat(request = ApiRequest(
-                userId = newUser.userId
-            )).chat
-        )
-        _fetchedUser.value = listOf(newUserItem) + _fetchedUser.value
+        withContext(Dispatchers.IO) {
+            Log.d("list", "list: ${chatEvent.receiverUserIds[0]}")
+            val newUser = repository.getUserInfoById(request = ApiRequest(userId = chatEvent.receiverUserIds[0])).user!!
+            val newUserItem = UserItem(
+                id = newUser.id,
+                userId = newUser.userId,
+                name = newUser.name,
+                emailAddress = newUser.emailAddress,
+                profilePhoto = newUser.profilePhoto,
+                list = newUser.list,
+                online = newUser.online,
+                lastLogin = newUser.lastLogin,
+                socket = newUser.socket,
+                isTyping = false,
+                lastMessage = repository.fetchLastChat(request = ApiRequest(
+                    userId = newUser.userId
+                )).chat
+            )
+            _fetchedUser.value = listOf(newUserItem) + _fetchedUser.value
+        }
 //        val newList = fetchedUser.value.toMutableList().apply {
 //            add(0,newUserItem)
 //        }
@@ -177,7 +200,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun disconnect() {
-        Log.d("debugging2","disconnecting mainViewModel")
+        Log.d("disconnect","disconnecting main")
         viewModelScope.launch {
             chatSocketService.closeSession()
         }
@@ -185,6 +208,7 @@ class MainViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        Log.d("disconnect","onCleared main")
         disconnect()
     }
 
@@ -232,8 +256,10 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    suspend fun setOnlineFalse() {
-        chatSocketService.sendOnline(false)
+    fun setOnlineFalse() {
+        viewModelScope.launch {
+            chatSocketService.sendOnline(false)
+        }
     }
 
 //    private fun handleTypingEvent(typing: Typing) {

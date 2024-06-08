@@ -93,18 +93,6 @@ class ChatSocketServiceImpl(
         }
     }
 
-    override fun observeMessage(): Flow<ChatEvent.MessageEvent> = observeChatEvent()
-        .filterIsInstance<ChatEvent.MessageEvent>()
-
-    override fun observeTyping(): Flow<ChatEvent.TypingEvent> = observeChatEvent()
-        .filterIsInstance<ChatEvent.TypingEvent>()
-
-    override fun observeOnline(): Flow<ChatEvent.OnlineEvent> = observeChatEvent()
-        .filterIsInstance<ChatEvent.OnlineEvent>()
-
-    override fun observeList(): Flow<ChatEvent.ListEvent> = observeChatEvent()
-        .filterIsInstance<ChatEvent.ListEvent>()
-
     override fun observeChatEvent(): Flow<ChatEvent> {
         return try {
             socket?.incoming

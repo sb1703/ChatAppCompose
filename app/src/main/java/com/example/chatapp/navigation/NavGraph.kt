@@ -16,9 +16,7 @@ import com.example.chatapp.util.Constants.CHAT_USER_ID
 
 @Composable
 fun SetupNavGraph(
-    navController: NavHostController,
-    mainViewModel: MainViewModel,
-//    destroyCalled: () -> Unit
+    navController: NavHostController
 ) {
     NavHost(
         navController = navController,
@@ -31,14 +29,12 @@ fun SetupNavGraph(
         }
         composable(route = Screen.Main.route) {
             MainScreen(
-                navController = navController,
-                mainViewModel = mainViewModel
+                navController = navController
             )
         }
         composable(route = Screen.Profile.route) {
             ProfileScreen(
-                navController = navController,
-                mainViewModel = mainViewModel
+                navController = navController
             )
         }
         composable(
@@ -50,8 +46,7 @@ fun SetupNavGraph(
             })
         ) {
             ChatScreen(
-                navController = navController,
-                mainViewModel = mainViewModel
+                navController = navController
             )
         }
     }

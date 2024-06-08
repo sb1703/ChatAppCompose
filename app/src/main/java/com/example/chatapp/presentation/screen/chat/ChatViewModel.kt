@@ -18,9 +18,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.zip
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -29,6 +32,9 @@ class ChatViewModel @Inject constructor(
     private val repository: Repository,
     private val chatSocketService: ChatSocketService
 ): ViewModel() {
+
+    private val _currentUser = MutableStateFlow(User())
+    val currentUser = _currentUser.asStateFlow()
 
     private val _chatUser = MutableStateFlow(User())
     val chatUser = _chatUser.asStateFlow()
@@ -46,51 +52,120 @@ class ChatViewModel @Inject constructor(
     val online = _online.asStateFlow()
 
     init {
+        getCurrentUser()
+        getChatIdArgument()
         viewModelScope.launch {
-            getChatIdArgument()
-            getUserInfoByUserId()
-            setOnline()
-            fetchChats()
-        }
-    }
-
-    fun connectToChat(
-        currentUser: User?
-    ) {
-        viewModelScope.launch {
-            chatSocketService.observeChatEvent()
-                .collectLatest { chatEvent ->
-                    when(chatEvent) {
-                        is ChatEvent.MessageEvent -> {
-                            handleMessageEvent(chatEvent, currentUser)
+            _chatId.collectLatest { chatId ->
+                if(chatId.isNotBlank()) {
+                    fetchChats()
+                    getUserInfoByUserId()
+                    _currentUser.collectLatest { user ->
+                        if(user.userId != null) {
+                            connectToChat()
+                            _chatUser.collectLatest { chatUser ->
+                                if(chatUser.userId != null) {
+                                    setOnline()
+                                }
+                            }
                         }
-                        is ChatEvent.TypingEvent -> {  }
-                        is ChatEvent.OnlineEvent -> {
-                            handleOnlineEvent(chatEvent)
-                        }
-                        is ChatEvent.ListEvent -> {  }
                     }
                 }
+            }
         }
+//        _chatId.zip(_currentUser) { chatId, currentUser ->
+//            chatId to currentUser
+//        }.onEach { (chatId, currentUser) ->
+//            Log.d("debugging3", "chatId: $chatId currentUser: $currentUser zip")
+//            if(chatId.isNotBlank() && currentUser.userId != null) {
+//                viewModelScope.launch {
+//                    fetchChats()
+//                    getUserInfoByUserId()
+//                    connectToChat()
+//                }
+//            }
+//        }.combine(_chatUser) { _, chatUser ->
+//            chatUser
+//        }.onEach { chatUser ->
+//            if(chatUser.userId != null) {
+//                setOnline()
+//            }
+//        }.launchIn(viewModelScope)
     }
 
-    private fun handleMessageEvent(chatEvent: ChatEvent.MessageEvent, currentUser: User?) {
-        val newList = fetchedChat.value.toMutableList().apply {
-            add(0,Message(
+    fun connectToChat() {
+        viewModelScope.launch {
+            Log.d("debugging2","userId: ${currentUser.value.userId} connected chat")
+            val result = currentUser.value.userId?.let { chatSocketService.initSession(it) }
+            when(result) {
+                is RequestState.Success -> {
+                    Log.d("debugging2","result is success")
+                    chatSocketService.observeChatEvent()
+                        .collectLatest { chatEvent ->
+                            when(chatEvent) {
+                                is ChatEvent.MessageEvent -> {
+                                    handleMessageEvent(chatEvent, currentUser.value)
+                                }
+                                is ChatEvent.TypingEvent -> {  }
+                                is ChatEvent.OnlineEvent -> {
+                                    handleOnlineEvent(chatEvent)
+                                }
+                                is ChatEvent.ListEvent -> {  }
+                            }
+                        }
+                }
+                is RequestState.Error -> {
+                    Log.d("debugging","result is error")
+                }
+                else -> {
+                    Log.d("debugging","result is else")
+                }
+            }
+        }
+//        viewModelScope.launch {
+//            Log.d("debugging2","userId: ${currentUser.value.userId} observe chat")
+//            chatSocketService.observeChatEvent()
+//                .collectLatest { chatEvent ->
+//                    when(chatEvent) {
+//                        is ChatEvent.MessageEvent -> {
+//                            handleMessageEvent(chatEvent, currentUser.value)
+//                        }
+//                        is ChatEvent.TypingEvent -> {  }
+//                        is ChatEvent.OnlineEvent -> {
+//                            handleOnlineEvent(chatEvent)
+//                        }
+//                        is ChatEvent.ListEvent -> {  }
+//                    }
+//                }
+//        }
+    }
+
+    private suspend fun handleMessageEvent(chatEvent: ChatEvent.MessageEvent, currentUser: User?) {
+        withContext(Dispatchers.IO) {
+            Log.d("message", "message: ${chatEvent.receiverUserIds[0]} - ${chatEvent.messageText} chat")
+//            val newList = fetchedChat.value.toMutableList().apply {
+//                add(0,Message(
+//                    author = chatEvent.receiverUserIds[0],
+//                    messageText = chatEvent.messageText,
+//                    receiver = listOf(currentUser?.userId)
+//                ))
+//            }
+            val newMessage = Message(
                 author = chatEvent.receiverUserIds[0],
                 messageText = chatEvent.messageText,
                 receiver = listOf(currentUser?.userId)
-            ))
+            )
+            _fetchedChat.value = listOf(newMessage) + _fetchedChat.value
         }
-        _fetchedChat.value = newList
     }
 
-    private fun handleOnlineEvent(chatEvent: ChatEvent.OnlineEvent) {
-        _online.value = chatEvent.online
+    private suspend fun handleOnlineEvent(chatEvent: ChatEvent.OnlineEvent) {
+        withContext(Dispatchers.IO) {
+            _online.value = chatEvent.online
+        }
     }
 
     fun disconnect() {
-        Log.d("debugging2","disconnecting chatViewModel")
+        Log.d("disconnect","disconnecting chat")
         viewModelScope.launch {
             chatSocketService.closeSession()
         }
@@ -129,7 +204,14 @@ class ChatViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        Log.d("disconnect","onCleared chat")
         disconnect()
+    }
+
+    fun getCurrentUser() {
+        viewModelScope.launch {
+            _currentUser.value = repository.getUserInfo().user!!
+        }
     }
 
     fun updateChatText(query: String) {
@@ -164,6 +246,12 @@ class ChatViewModel @Inject constructor(
     fun setOnline() {
         viewModelScope.launch {
             _online.value = chatUser.value.online
+        }
+    }
+
+    fun setOnlineFalse() {
+        viewModelScope.launch {
+            chatSocketService.sendOnline(false)
         }
     }
 

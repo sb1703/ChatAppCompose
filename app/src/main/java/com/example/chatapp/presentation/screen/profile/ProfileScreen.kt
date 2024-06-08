@@ -5,10 +5,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
 import com.example.chatapp.presentation.screen.common.BottomBar
 import com.example.chatapp.presentation.screen.main.MainViewModel
@@ -16,17 +21,28 @@ import com.example.chatapp.presentation.screen.main.MainViewModel
 @Composable
 fun ProfileScreen(
     navController: NavHostController,
-    profileViewModel: ProfileViewModel = hiltViewModel(),
-    mainViewModel: MainViewModel
+    lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
+    profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
 
-    val nameQuery = profileViewModel.nameQuery.collectAsState()
-    val currentUser = mainViewModel.currentUser.collectAsState()
-    val isReadOnly = profileViewModel.isReadOnly.collectAsState()
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if(event == Lifecycle.Event.ON_DESTROY) {
+                profileViewModel.setOnlineFalse()
+                profileViewModel.disconnect()
+            }
+        }
 
-    LaunchedEffect(key1 = true) {
-        profileViewModel.updateName(currentUser.value.name)
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
+
+    val nameQuery = profileViewModel.nameQuery.collectAsState()
+    val isReadOnly = profileViewModel.isReadOnly.collectAsState()
+    val currentUser = profileViewModel.currentUser.collectAsState()
 
     Scaffold(
         topBar = {

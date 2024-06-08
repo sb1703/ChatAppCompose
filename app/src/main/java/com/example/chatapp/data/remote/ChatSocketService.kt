@@ -16,10 +16,6 @@ interface ChatSocketService {
     suspend fun sendOnline(online: Boolean)
     suspend fun sendList(receiverUserIds: List<String>)
     suspend fun sendChatEvent(chatEvent: ChatEvent)
-    fun observeMessage(): Flow<ChatEvent.MessageEvent>
-    fun observeTyping(): Flow<ChatEvent.TypingEvent>
-    fun observeOnline(): Flow<ChatEvent.OnlineEvent>
-    fun observeList(): Flow<ChatEvent.ListEvent>
     fun observeChatEvent(): Flow<ChatEvent>
     suspend fun closeSession()
 

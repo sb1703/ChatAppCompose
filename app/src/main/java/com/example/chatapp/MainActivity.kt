@@ -20,39 +20,16 @@ import kotlinx.coroutines.launch
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val mainViewModel by viewModels<MainViewModel>()
-    private var isLoggedIn: Boolean = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             ChatAppTheme {
-                val currentUser by mainViewModel.currentUser.collectAsState()
-                LaunchedEffect(key1 = currentUser) {
-                    isLoggedIn = currentUser != null
-                }
                 val navController = rememberNavController()
                 SetupNavGraph(
-                    navController = navController,
-                    mainViewModel = mainViewModel,
-//                    destroyCalled = {
-//                        onDestroy()
-//                    }
+                    navController = navController
                 )
             }
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        if(isLoggedIn) {
-            Log.d("debugging2","Destroying & settingOnlineFalse")
-            lifecycleScope.launch {
-                mainViewModel.setOnlineFalse()
-                mainViewModel.disconnect()
-            }
-        } else {
-            Log.d("debugging2","Destroying")
-        }
-    }
 }
