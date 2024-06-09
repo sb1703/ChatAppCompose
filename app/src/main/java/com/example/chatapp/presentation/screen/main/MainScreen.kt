@@ -1,17 +1,14 @@
 package com.example.chatapp.presentation.screen.main
 
-import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -19,19 +16,20 @@ import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.chatapp.navigation.Screen
 import com.example.chatapp.presentation.screen.common.BottomBar
+import com.example.chatapp.presentation.screen.common.MainChatViewModel
 
 @Composable
 fun MainScreen(
     navController: NavHostController,
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
-    mainViewModel: MainViewModel = hiltViewModel()
+    viewModel: MainChatViewModel
 ) {
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if(event == Lifecycle.Event.ON_DESTROY) {
-                mainViewModel.setOnlineFalse()
-                mainViewModel.disconnect()
+                viewModel.setOnlineFalse()
+                viewModel.disconnect()
             }
         }
 
@@ -42,21 +40,21 @@ fun MainScreen(
         }
     }
 
-    val currentUser = mainViewModel.currentUser.collectAsState()
-    val users = mainViewModel.fetchedUser.collectAsState()
-    val searchedUsers = mainViewModel.searchedUser.collectAsLazyPagingItems()
-    val searchQuery = mainViewModel.searchQuery.collectAsState()
+    val currentUser = viewModel.currentUser.collectAsState()
+    val users = viewModel.fetchedUser.collectAsState()
+    val searchedUsers = viewModel.searchedUser.collectAsLazyPagingItems()
+    val searchQuery = viewModel.searchQuery.collectAsState()
 
     Scaffold(
         topBar = {
             MainTopBar(
                 text = searchQuery.value,
                 onTextChange = {
-                    mainViewModel.updateSearchQuery(it)
-                    mainViewModel.searchUser()
+                    viewModel.updateSearchQuery(it)
+                    viewModel.searchUser()
                 },
                 onSearchClicked = {
-                    mainViewModel.searchUser()
+                    viewModel.searchUser()
                 },
                 currentUser = currentUser.value
             )
@@ -72,9 +70,8 @@ fun MainScreen(
                     searchedUsers = searchedUsers,
                     searchQuery = searchQuery.value,
                     navigationToChatScreen = {
-                        Log.d("disconnect", "disconnecting main navigation to chat screen")
-                        mainViewModel.disconnect()
-                        navController.navigate(Screen.Chat.passId(id = it))
+                        viewModel.updateChatId(it)
+                        navController.navigate(Screen.Chat.route)
                     },
                     getAuthorName = { authorUserId ->
                         if(authorUserId == currentUser.value.userId) {

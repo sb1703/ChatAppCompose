@@ -2,8 +2,6 @@ package com.example.chatapp.data.remote
 
 import android.util.Log
 import com.example.chatapp.domain.model.ChatEvent
-import com.example.chatapp.domain.model.Message
-import com.example.chatapp.domain.model.Typing
 import com.example.chatapp.util.Constants
 import com.example.chatapp.util.RequestState
 import io.ktor.client.HttpClient
@@ -13,14 +11,15 @@ import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.WebSocketSession
 import io.ktor.http.cio.websocket.close
 import io.ktor.http.cio.websocket.readText
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.isActive
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -49,6 +48,9 @@ class ChatSocketServiceImpl(
         senderUserId: String
     ): RequestState<Unit> {
         return try {
+            if(socket?.isActive == true) {
+                RequestState.Success(Unit)
+            }
             socket = client.webSocketSession {
                 url("${Constants.WS_BASE_URL}?userId=$senderUserId")
             }
@@ -93,20 +95,21 @@ class ChatSocketServiceImpl(
         }
     }
 
-    override fun observeChatEvent(): Flow<ChatEvent> {
+    override fun observeChatEvent(coroutineScope: CoroutineScope): SharedFlow<ChatEvent> {
         return try {
-            socket?.incoming
+            val incomingFlow = socket?.incoming
                 ?.receiveAsFlow()
                 ?.filter { it is Frame.Text }
                 ?.map {
                     val jsonText = (it as? Frame.Text)?.readText() ?: ""
                     Log.d("jsonText", "JSON - $jsonText")
-                    val chatEvent = json.decodeFromString<ChatEvent>(ChatEvent.serializer(), jsonText)
-                    chatEvent
-                } ?: flow {  }
-        } catch (e: Exception){
+                    json.decodeFromString<ChatEvent>(ChatEvent.serializer(), jsonText)
+                } ?: flow<ChatEvent> {}
+
+            incomingFlow.shareIn(coroutineScope, SharingStarted.WhileSubscribed(), replay = 1)
+        } catch (e: Exception) {
             e.printStackTrace()
-            flow{  }
+            flow<ChatEvent> {}.shareIn(coroutineScope, SharingStarted.WhileSubscribed(), replay = 1)
         }
     }
 

@@ -17,12 +17,13 @@ sealed class Screen(
         title = "Chats",
         icon = Icons.Filled.ChatBubble
     )
-    data object Chat: Screen(route = "chat_screen?$CHAT_USER_ID={$CHAT_USER_ID}") {
-        fun passId(id: String) = "chat_screen?$CHAT_USER_ID=$id"
-    }
+    data object Chat: Screen(route = "chat_screen")
     data object Profile: Screen(
         route = "profile_screen",
         title = "Profile",
         icon = Icons.Filled.AccountCircle
+    )
+    data object MainChat: Screen(
+        route = "main_chat_screen"
     )
 }

@@ -1,18 +1,18 @@
 package com.example.chatapp.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.compose.NavHost
+import androidx.compose.runtime.remember
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
+import androidx.navigation.navigation
 import com.example.chatapp.presentation.screen.chat.ChatScreen
-import com.example.chatapp.presentation.screen.chat.ChatViewModel
+import com.example.chatapp.presentation.screen.common.MainChatViewModel
 import com.example.chatapp.presentation.screen.login.LoginScreen
 import com.example.chatapp.presentation.screen.main.MainScreen
-import com.example.chatapp.presentation.screen.main.MainViewModel
 import com.example.chatapp.presentation.screen.profile.ProfileScreen
-import com.example.chatapp.util.Constants.CHAT_USER_ID
 
 @Composable
 fun SetupNavGraph(
@@ -27,27 +27,43 @@ fun SetupNavGraph(
                 navController = navController
             )
         }
-        composable(route = Screen.Main.route) {
-            MainScreen(
-                navController = navController
-            )
-        }
         composable(route = Screen.Profile.route) {
             ProfileScreen(
                 navController = navController
             )
         }
-        composable(
-            route = Screen.Chat.route,
-            arguments = listOf(navArgument(name = CHAT_USER_ID){
-                type = NavType.StringType
-                nullable = true
-                defaultValue = null
-            })
+        navigation(
+            route = Screen.MainChat.route,
+            startDestination = Screen.Main.route
         ) {
-            ChatScreen(
-                navController = navController
-            )
+            composable(route = Screen.Main.route) { entry ->
+                val viewModel = entry.sharedViewModel(navController)
+                viewModel.getCurrentUser()
+                MainScreen(
+                    navController = navController,
+                    viewModel = viewModel
+                )
+            }
+            composable(
+                route = Screen.Chat.route
+            ) { entry ->
+                val viewModel = entry.sharedViewModel(navController)
+                ChatScreen(
+                    navController = navController,
+                    viewModel = viewModel
+                )
+            }
         }
     }
+}
+
+@Composable
+fun NavBackStackEntry.sharedViewModel(
+    navController: NavHostController
+): MainChatViewModel {
+    val NavGraphRoute = destination.parent?.route ?: return hiltViewModel()
+    val parentEntry = remember(this) {
+        navController.getBackStackEntry(NavGraphRoute)
+    }
+    return hiltViewModel(parentEntry)
 }

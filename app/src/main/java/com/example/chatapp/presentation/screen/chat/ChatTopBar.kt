@@ -1,7 +1,9 @@
 package com.example.chatapp.presentation.screen.chat
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -38,20 +40,38 @@ fun ChatTopBar(
     onBackStackClicked: () -> Unit,
     name: String,
     profilePicture: String,
-    online: Boolean
+    online: Boolean,
+    isTyping: Boolean
 ) {
     TopAppBar(
         title = {
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Normal)) {
-                        append(name)
-                    }
-                },
-                fontSize = MaterialTheme.typography.titleLarge.fontSize,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.Normal)) {
+                            append(name)
+                        }
+                    },
+                    fontSize = MaterialTheme.typography.titleLarge.fontSize,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if(isTyping) {
+                    Text(
+                        text = buildAnnotatedString {
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.ExtraLight)) {
+                                append("typing...")
+                            }
+                        },
+                        fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
         },
         navigationIcon = {
             Row(
@@ -87,7 +107,8 @@ fun ChatTopBar(
             if(online) {
                 Surface(
                     modifier = Modifier
-                        .size(12.dp)
+                        .padding(end = 7.dp)
+                        .size(10.dp)
                         .clip(CircleShape),
                     color = Color.Red
                 ) {}
@@ -103,6 +124,7 @@ private fun ChatTopBarPreview() {
         onBackStackClicked = {  },
         name = "John Doe",
         profilePicture = "",
-        online = true
+        online = true,
+        isTyping = true
     )
 }

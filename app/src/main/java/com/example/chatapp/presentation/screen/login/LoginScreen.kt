@@ -93,7 +93,7 @@ fun LoginScreen(
 private fun navigateToMainScreen(
     navController: NavHostController
 ) {
-    navController.navigate(route = Screen.Main.route) {
+    navController.navigate(route = Screen.MainChat.route) {
         popUpTo(route = Screen.Login.route) {
             inclusive = true
         }
