@@ -63,6 +63,16 @@ interface KtorApi {
         @Body request: ApiRequest
     ): ApiResponse
 
+    @POST("/get_online_status")
+    suspend fun getOnlineStatus(
+        @Body request: ApiRequest
+    ): ApiResponse
+
+    @POST("/get_last_login")
+    suspend fun getLastLogin(
+        @Body request: ApiRequest
+    ): ApiResponse
+
     @PUT("/update_user")
     suspend fun updateUser(
         @Body userUpdate: UserUpdate

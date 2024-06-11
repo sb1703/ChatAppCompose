@@ -1,24 +1,20 @@
 package com.example.chatapp.data.remote
 
 import com.example.chatapp.domain.model.ChatEvent
-import com.example.chatapp.domain.model.Message
-import com.example.chatapp.domain.model.Typing
 import com.example.chatapp.util.RequestState
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharedFlow
 
 interface ChatSocketService {
 
     suspend fun initSession(
         senderUserId: String
     ): RequestState<Unit>
-    suspend fun sendMessage(message: String, receiverUserIds: List<String>)
+    suspend fun sendMessage(message: String, receiverUserIds: List<String>, messageId: String)
     suspend fun sendTyping(receiverUserIds: List<String>)
-    suspend fun sendOnline(online: Boolean)
     suspend fun sendList(receiverUserIds: List<String>)
+    suspend fun sendSeen(receiverUserIds: List<String>, messageIds: List<String>, seenAt: String)
     suspend fun sendChatEvent(chatEvent: ChatEvent)
-    fun observeChatEvent(coroutineScope: CoroutineScope): SharedFlow<ChatEvent>
+    fun observeChatEvent(): Flow<ChatEvent>
     suspend fun closeSession()
 
 }

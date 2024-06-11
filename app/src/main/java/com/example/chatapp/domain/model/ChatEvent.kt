@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 sealed class ChatEvent {
     @Serializable
     @SerialName("MessageEvent")
-    data class MessageEvent(val messageText: String, val receiverUserIds: List<String>) : ChatEvent()
+    data class MessageEvent(val messageText: String, val receiverUserIds: List<String>, val messageId: String = "") : ChatEvent()
 
     @Serializable
     @SerialName("TypingEvent")
@@ -22,4 +22,12 @@ sealed class ChatEvent {
     @Serializable
     @SerialName("ListEvent")
     data class ListEvent(val receiverUserIds: List<String>) : ChatEvent()
+
+    @Serializable
+    @SerialName("SeenEvent")
+    data class SeenEvent(
+        val receiverUserIds: List<String>,
+        val messageIds: List<String>,
+        val seenAt: String = getCurrentTimeIn12HourFormat()
+    ) : ChatEvent()
 }

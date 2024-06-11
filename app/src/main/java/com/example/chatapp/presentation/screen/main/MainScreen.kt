@@ -7,6 +7,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -14,6 +15,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.example.chatapp.domain.model.User
+import com.example.chatapp.domain.model.UserItem
 import com.example.chatapp.navigation.Screen
 import com.example.chatapp.presentation.screen.common.BottomBar
 import com.example.chatapp.presentation.screen.common.MainChatViewModel
@@ -22,13 +25,14 @@ import com.example.chatapp.presentation.screen.common.MainChatViewModel
 fun MainScreen(
     navController: NavHostController,
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
-    viewModel: MainChatViewModel
+    viewModel: MainChatViewModel,
+    currentUser: User,
+    users: List<UserItem>
 ) {
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if(event == Lifecycle.Event.ON_DESTROY) {
-                viewModel.setOnlineFalse()
                 viewModel.disconnect()
             }
         }
@@ -40,15 +44,13 @@ fun MainScreen(
         }
     }
 
-    val currentUser = viewModel.currentUser.collectAsState()
-    val users = viewModel.fetchedUser.collectAsState()
     val searchedUsers = viewModel.searchedUser.collectAsLazyPagingItems()
-    val searchQuery = viewModel.searchQuery.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
 
     Scaffold(
         topBar = {
             MainTopBar(
-                text = searchQuery.value,
+                text = searchQuery,
                 onTextChange = {
                     viewModel.updateSearchQuery(it)
                     viewModel.searchUser()
@@ -56,7 +58,7 @@ fun MainScreen(
                 onSearchClicked = {
                     viewModel.searchUser()
                 },
-                currentUser = currentUser.value
+                currentUser = currentUser
             )
         },
         content = { paddingValue ->
@@ -66,20 +68,21 @@ fun MainScreen(
                     .padding(paddingValue)
             ) {
                 MainContent(
-                    users = users.value,
+                    users = users,
                     searchedUsers = searchedUsers,
-                    searchQuery = searchQuery.value,
+                    searchQuery = searchQuery,
                     navigationToChatScreen = {
                         viewModel.updateChatId(it)
                         navController.navigate(Screen.Chat.route)
                     },
                     getAuthorName = { authorUserId ->
-                        if(authorUserId == currentUser.value.userId) {
+                        if(authorUserId == currentUser.userId) {
                             "You"
                         } else {
-                            users.value.find { it.userId == authorUserId }?.name ?: ""
+                            users.find { it.userId == authorUserId }?.name ?: ""
                         }
-                    }
+                    },
+                    currentUserId = currentUser.userId ?: "",
                 )
             }
         },

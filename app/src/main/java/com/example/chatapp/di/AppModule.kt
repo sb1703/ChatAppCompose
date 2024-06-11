@@ -1,10 +1,13 @@
 package com.example.chatapp.di
 
+import android.content.Context
+import com.example.chatapp.connectivity.NetworkConnectivityObserver
 import com.example.chatapp.data.remote.ChatSocketService
 import com.example.chatapp.data.remote.ChatSocketServiceImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -37,5 +40,11 @@ object AppModule {
     ): ChatSocketService {
         return ChatSocketServiceImpl(client)
     }
+
+    @Singleton
+    @Provides
+    fun provideNetworkConnectivityObserver(
+        @ApplicationContext context: Context
+    ) = NetworkConnectivityObserver(context = context)
 
 }

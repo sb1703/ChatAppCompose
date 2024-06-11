@@ -13,6 +13,9 @@ data class ApiResponse(
     val nextPage: Int? = null,
     val listMessages: List<Message> = emptyList(),
     val listUsers: List<User> = emptyList(),
+    val online: Boolean = false,
+    val lastLogin: String? = null,
+    val messageId: String = "",
     @Transient
     val error: Exception? = null
 )

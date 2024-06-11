@@ -34,6 +34,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.chatapp.R
 import com.example.chatapp.domain.model.Message
+import com.example.chatapp.domain.model.SeenBy
 import com.example.chatapp.domain.model.User
 import com.example.chatapp.domain.model.UserItem
 import com.example.chatapp.domain.model.UserListData
@@ -44,7 +45,8 @@ fun MainContent(
     searchedUsers: LazyPagingItems<UserItem>,
     searchQuery: String,
     navigationToChatScreen: (String) -> Unit,
-    getAuthorName: (String) -> String
+    getAuthorName: (String) -> String,
+    currentUserId: String
 ) {
 
     val searchedResult = handlePagingResult(users = searchedUsers)
@@ -52,14 +54,16 @@ fun MainContent(
         UserList(
             userListData = UserListData.RegularData(users = users),
             navigationToChatScreen = navigationToChatScreen,
-            getAuthorName = getAuthorName
+            getAuthorName = getAuthorName,
+            currentUserId = currentUserId
         )
     } else {
         if(searchedResult) {
             UserList(
                 userListData = UserListData.PagingData(users = searchedUsers),
                 navigationToChatScreen = navigationToChatScreen,
-                getAuthorName = getAuthorName
+                getAuthorName = getAuthorName,
+                currentUserId = currentUserId
             )
         }
     }
@@ -69,7 +73,8 @@ fun MainContent(
 fun UserList(
     userListData: UserListData,
     navigationToChatScreen: (String) -> Unit,
-    getAuthorName: (String) -> String
+    getAuthorName: (String) -> String,
+    currentUserId: String
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize()
@@ -89,7 +94,7 @@ fun UserList(
                                     title = it.name,
                                     description = "${authorName}: ${message.messageText}",
                                     time = message.time,
-                                    isUnread = true,
+                                    isUnread = checkIfUnRead(message?.seenBy, currentUserId, message.author),
                                     imageUri = it.profilePhoto,
                                     navigationToChatScreen = { string ->
                                         it.userId.let { it1 ->
@@ -104,7 +109,7 @@ fun UserList(
                                     title = it.name,
                                     description = "",
                                     time = "",
-                                    isUnread = true,
+                                    isUnread = checkIfUnRead(message?.seenBy, currentUserId, message?.author),
                                     imageUri = it.profilePhoto,
                                     navigationToChatScreen = { string ->
                                         it.userId.let { it1 ->
@@ -138,7 +143,7 @@ fun UserList(
                         title = user.name,
                         description = "${authorName}: ${message?.messageText.orEmpty()}",
                         time = message?.time.orEmpty(),
-                        isUnread = true,
+                        isUnread = checkIfUnRead(message?.seenBy, currentUserId, message?.author),
                         imageUri = user.profilePhoto,
                         navigationToChatScreen = { user.userId?.let { it1 ->
                             navigationToChatScreen(
@@ -336,4 +341,13 @@ private fun UserItemPreview() {
         imageUri = "",
         navigationToChatScreen = {}
     )
+}
+
+private fun checkIfUnRead(
+    seenBy: List<SeenBy>?,
+    currentUserId: String,
+    authorUserId: String?
+): Boolean {
+    if(authorUserId == currentUserId) return false
+    return seenBy?.none { it.userId == currentUserId } ?: false
 }

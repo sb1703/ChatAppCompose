@@ -5,17 +5,23 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.example.chatapp.connectivity.ConnectivityObserver
+import com.example.chatapp.connectivity.NetworkConnectivityObserver
 import com.example.chatapp.data.remote.ChatSocketService
 import com.example.chatapp.domain.model.ApiRequest
 import com.example.chatapp.domain.model.ChatEvent
 import com.example.chatapp.domain.model.Message
+import com.example.chatapp.domain.model.SeenBy
 import com.example.chatapp.domain.model.User
 import com.example.chatapp.domain.model.UserItem
+import com.example.chatapp.domain.model.getCurrentTimeIn12HourFormat
 import com.example.chatapp.domain.repository.Repository
 import com.example.chatapp.util.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,9 +33,13 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainChatViewModel @Inject constructor(
+    private val connectivity: NetworkConnectivityObserver,
     private val repository: Repository,
     private val chatSocketService: ChatSocketService
 ): ViewModel() {
+
+    private val _network = MutableStateFlow(ConnectivityObserver.Status.Unavailable)
+    val network = _network.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
@@ -58,6 +68,9 @@ class MainChatViewModel @Inject constructor(
     private val _online = MutableStateFlow(false)
     val online = _online.asStateFlow()
 
+    private val _lastLogin = MutableStateFlow("")
+    val lastLogin = _lastLogin.asStateFlow()
+
     private val _isTyping = MutableStateFlow(false)
     val isTyping = _isTyping.asStateFlow()
 
@@ -67,39 +80,20 @@ class MainChatViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            _currentUser.collectLatest {
-                if(it.userId != null) {
-                    fetchUsers()
-                    connectToChat()
-                }
-            }
-        }
-
-        viewModelScope.launch {
-            _chatId.collectLatest { chatId ->
-                if (chatId.isNotBlank()) {
-                    getUserInfoByUserId()
-                    fetchChats()
-                    _chatUser.collectLatest { chatUser ->
-                        if (chatUser.userId != null) {
-                            setOnline()
-                        }
-                    }
-                }
+            connectivity.observe().collectLatest {
+                _network.value = it
             }
         }
     }
 
-    fun connectToChat() {
-        viewModelScope.launch {
-            Log.d("debugging2","userId: ${currentUser.value.userId} connected main")
+    suspend fun connectToChat() {
+        viewModelScope.launch(Dispatchers.IO) {
             val result = currentUser.value.userId?.let { chatSocketService.initSession(it) }
-            chatSocketService.sendOnline(true)
             when(result) {
                 is RequestState.Success -> {
-                    Log.d("debugging2","result is success")
-                    viewModelScope.launch {
-                        chatSocketService.observeChatEvent(viewModelScope)
+                    Log.d("debugging3","result is success")
+                    viewModelScope.launch(Dispatchers.IO) {
+                        chatSocketService.observeChatEvent()
                             .collectLatest { chatEvent ->
                                 Log.d("debugging2","chatEvent: $chatEvent main")
                                 when(chatEvent) {
@@ -115,6 +109,9 @@ class MainChatViewModel @Inject constructor(
                                     is ChatEvent.OnlineEvent -> {
                                         handleOnlineEvent(chatEvent)
                                     }
+                                    is ChatEvent.SeenEvent -> {
+                                        handleSeenEvent(chatEvent)
+                                    }
                                 }
                             }
                     }
@@ -129,7 +126,7 @@ class MainChatViewModel @Inject constructor(
         }
     }
 
-    private fun updateFetchedUserList(author: String, text: String, receiver: List<String?>, message: Boolean) {
+    private fun updateFetchedUserList(author: String, text: String, receiver: List<String?>, message: Boolean, messageId: String = "") {
 
         if(message) {
             val user: UserItem
@@ -144,6 +141,7 @@ class MainChatViewModel @Inject constructor(
             }
 
             val newMessage = Message(
+                messageId = messageId,
                 author = author,
                 messageText = text,
                 receiver = receiver
@@ -163,7 +161,14 @@ class MainChatViewModel @Inject constructor(
                 if(index != -1){
                     val user = get(index)
                     val newUser = user.copy(
-                        lastMessage = Message(
+                        lastMessage = user.lastMessage?.let {
+                            Message(
+                                author = author,
+                                messageText = text,
+                                receiver = receiver,
+                                seenBy = it.seenBy
+                            )
+                        } ?: Message(
                             author = author,
                             messageText = text,
                             receiver = receiver
@@ -178,8 +183,9 @@ class MainChatViewModel @Inject constructor(
         }
     }
 
-    private fun updateFetchedChatList(author: String, text: String, receiver: List<String?>) {
+    private fun updateFetchedChatList(author: String, text: String, receiver: List<String?>, messageId: String) {
         val newMessage = Message(
+            messageId = messageId,
             author = author,
             messageText = text,
             receiver = receiver
@@ -196,11 +202,11 @@ class MainChatViewModel @Inject constructor(
                 currentPair.first.cancel()
                 jobs.remove(chatEvent.receiverUserIds[0])
             }
-            updateFetchedUserList(chatEvent.receiverUserIds[0], chatEvent.messageText, listOf(currentUser.value.userId), true)
+            updateFetchedUserList(chatEvent.receiverUserIds[0], chatEvent.messageText, listOf(currentUser.value.userId), true, chatEvent.messageId)
 
             // CHAT SCREEN
             if(chatId.value != "") {
-                updateFetchedChatList(chatEvent.receiverUserIds[0], chatEvent.messageText, listOf(currentUser.value.userId))
+                updateFetchedChatList(chatEvent.receiverUserIds[0], chatEvent.messageText, listOf(currentUser.value.userId), chatEvent.messageId)
             }
         }
     }
@@ -287,17 +293,40 @@ class MainChatViewModel @Inject constructor(
         }
     }
 
+    private suspend fun handleSeenEvent(chatEvent: ChatEvent.SeenEvent) {
+        withContext(Dispatchers.IO) {
+            // CHAT SCREEN
+            if (chatId.value != "") {
+                val newList = fetchedChat.value.toMutableList().apply {
+                    forEachIndexed { index, message ->
+                        if(message.messageId in chatEvent.messageIds) {
+                            val newMessage = message.copy(
+                                seenBy = message.seenBy.plus(SeenBy(
+                                    seenAt = chatEvent.seenAt,
+                                    userId = chatEvent.receiverUserIds[0]
+                                ))
+                            )
+                            set(index, newMessage)
+                        }
+                    }
+                }
+                _fetchedChat.value = newList
+            }
+        }
+    }
+
     fun disconnect() {
         viewModelScope.launch {
             chatSocketService.closeSession()
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        disconnect()
-    }
+//    override fun onCleared() {
+//        super.onCleared()
+//        disconnect()
+//    }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun sendMessage(currentUser: User?) {
         viewModelScope.launch {
             val currentChatText = chatText.value
@@ -317,11 +346,58 @@ class MainChatViewModel @Inject constructor(
                     chatSocketService.sendList(receiverUserIds = listOf(chatId.value))
                 }
                 if (currentUser != null) {
-                    updateFetchedChatList(currentUser.userId.toString(), currentChatText, listOf(chatId.value))
-                    updateFetchedUserList(currentUser.userId.toString(), currentChatText, listOf(chatId.value), true)
+                    val messageEntity = Message(
+                        author = currentUser.userId.toString(),
+                        messageText = currentChatText,
+                        receiver = listOf(chatId.value)
+                    )
+                    val response = viewModelScope.async(Dispatchers.IO) {
+                        repository.addChats(
+                            request = ApiRequest(
+                                message = messageEntity
+                            )
+                        )
+                    }
+                    response.invokeOnCompletion {
+                        if(it == null) {
+                            val messageId = response.getCompleted().messageId
+                            viewModelScope.launch {
+                                updateFetchedChatList(currentUser.userId.toString(), currentChatText, listOf(chatId.value), messageId)
+                                updateFetchedUserList(currentUser.userId.toString(), currentChatText, listOf(chatId.value), true, messageId)
+                                chatSocketService.sendMessage(message = currentChatText, receiverUserIds = listOf(chatId.value), messageId = messageId)
+                            }
+                        }
+                    }
                 }
-                chatSocketService.sendMessage(message = currentChatText, receiverUserIds = listOf(chatId.value))
             }
+        }
+    }
+
+    fun sendSeen() {
+        viewModelScope.launch {
+            val messageIds = fetchedChat.value.filter {
+                it.author == chatId.value && it.seenBy.none { it.userId == currentUser.value.userId }
+            }.mapNotNull {
+                it.messageId
+            }
+
+            if(messageIds.isEmpty()) return@launch
+            chatSocketService.sendSeen(receiverUserIds = listOf(chatId.value), messageIds = messageIds, seenAt = getCurrentTimeIn12HourFormat())
+            val newList = fetchedChat.value.toMutableList().apply {
+                forEachIndexed { index, message ->
+                    if(message.messageId in messageIds) {
+                        val newMessage = message.copy(
+                            seenBy = message.seenBy.plus(SeenBy(
+                                seenAt = getCurrentTimeIn12HourFormat(),
+                                userId = currentUser.value.userId.toString()
+                            ))
+                        )
+                        set(index, newMessage)
+                    }
+                }
+            }
+
+            _fetchedChat.value = newList
         }
     }
 
@@ -333,7 +409,7 @@ class MainChatViewModel @Inject constructor(
         _chatId.value = id
     }
 
-    fun fetchUsers(){
+    suspend fun fetchUsers(){
         viewModelScope.launch(Dispatchers.IO) {
             _fetchedUser.value = repository.fetchUsers().listUsers.map {
                 UserItem(
@@ -368,9 +444,25 @@ class MainChatViewModel @Inject constructor(
         }
     }
 
-    fun getCurrentUser() {
-        viewModelScope.launch {
+    suspend fun getCurrentUser() {
+        viewModelScope.launch(Dispatchers.IO) {
             _currentUser.value = repository.getUserInfo().user!!
+        }
+    }
+
+    suspend fun getOnlineStatus() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _online.value = repository.getOnlineStatus(ApiRequest(
+                userId = chatId.value
+            )).online
+        }
+    }
+
+    suspend fun getLastLogin() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _lastLogin.value = repository.getLastLogin(ApiRequest(
+                userId = chatId.value
+            )).lastLogin.toString()
         }
     }
 
@@ -386,26 +478,18 @@ class MainChatViewModel @Inject constructor(
     }
 
     suspend fun fetchChats(){
-        _fetchedChat.value = repository.fetchChats(
-            request = ApiRequest(
-                userId = chatId.value
-            )
-        ).listMessages.reversed()
-    }
-
-    suspend fun getUserInfoByUserId() {
-        _chatUser.value = repository.getUserInfoById(request = ApiRequest(userId = chatId.value)).user!!
-    }
-
-    fun setOnline() {
-        viewModelScope.launch {
-            _online.value = chatUser.value.online
+        viewModelScope.launch(Dispatchers.IO) {
+            _fetchedChat.value = repository.fetchChats(
+                request = ApiRequest(
+                    userId = chatId.value
+                )
+            ).listMessages.reversed()
         }
     }
 
-    fun setOnlineFalse() {
-        viewModelScope.launch {
-            chatSocketService.sendOnline(false)
+    suspend fun getUserInfoByUserId() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _chatUser.value = repository.getUserInfoById(request = ApiRequest(userId = chatId.value)).user!!
         }
     }
 

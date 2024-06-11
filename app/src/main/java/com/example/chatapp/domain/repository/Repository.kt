@@ -15,6 +15,8 @@ interface Repository {
     suspend fun verifyTokenOnBackend(request: ApiRequest): ApiResponse
     suspend fun getUserInfo(): ApiResponse
     suspend fun getUserInfoById(request: ApiRequest): ApiResponse
+    suspend fun getOnlineStatus(request: ApiRequest): ApiResponse
+    suspend fun getLastLogin(request: ApiRequest): ApiResponse
     suspend fun updateUser(userUpdate: UserUpdate): ApiResponse
     suspend fun deleteUser(): ApiResponse
     suspend fun clearSession(): ApiResponse

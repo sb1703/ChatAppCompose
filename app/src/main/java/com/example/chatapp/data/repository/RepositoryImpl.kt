@@ -69,6 +69,30 @@ class RepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getOnlineStatus(request: ApiRequest): ApiResponse {
+        return try {
+            Log.d("hello","repo")
+            ktorApi.getOnlineStatus(
+                request = request
+            )
+        } catch (e: Exception) {
+            Log.d("hello",e.message.toString())
+            ApiResponse(success = false, error = e)
+        }
+    }
+
+    override suspend fun getLastLogin(request: ApiRequest): ApiResponse {
+        return try {
+            Log.d("hello","repo")
+            ktorApi.getLastLogin(
+                request = request
+            )
+        } catch (e: Exception) {
+            Log.d("hello",e.message.toString())
+            ApiResponse(success = false, error = e)
+        }
+    }
+
     override suspend fun updateUser(userUpdate: UserUpdate): ApiResponse {
         return try {
             ktorApi.updateUser(userUpdate = userUpdate)

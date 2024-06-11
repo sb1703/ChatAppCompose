@@ -13,19 +13,24 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
+import com.example.chatapp.domain.model.Message
+import com.example.chatapp.domain.model.User
 import com.example.chatapp.presentation.screen.common.MainChatViewModel
 
 @Composable
 fun ChatScreen(
     navController: NavHostController,
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current,
-    viewModel: MainChatViewModel
+    viewModel: MainChatViewModel,
+    chatUser: User,
+    online: Boolean,
+    lastLogin: String,
+    chats: List<Message>
 ) {
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if(event == Lifecycle.Event.ON_DESTROY) {
-                viewModel.setOnlineFalse()
                 viewModel.disconnect()
             }
         }
@@ -38,10 +43,7 @@ fun ChatScreen(
     }
 
     val currentUser by viewModel.currentUser.collectAsState()
-    val chatUser by viewModel.chatUser.collectAsState()
     val chatText by viewModel.chatText.collectAsState()
-    val chats by viewModel.fetchedChat.collectAsState()
-    val online by viewModel.online.collectAsState()
     val isTyping by viewModel.isTyping.collectAsState()
 
     Scaffold(
@@ -53,7 +55,8 @@ fun ChatScreen(
                 name = chatUser.name,
                 profilePicture = chatUser.profilePhoto,
                 online = online,
-                isTyping = isTyping
+                isTyping = isTyping,
+                lastLogin = lastLogin
             )
         },
         content = { paddingValue ->

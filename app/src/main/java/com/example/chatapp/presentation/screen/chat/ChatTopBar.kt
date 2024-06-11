@@ -41,7 +41,8 @@ fun ChatTopBar(
     name: String,
     profilePicture: String,
     online: Boolean,
-    isTyping: Boolean
+    isTyping: Boolean,
+    lastLogin: String
 ) {
     TopAppBar(
         title = {
@@ -112,6 +113,17 @@ fun ChatTopBar(
                         .clip(CircleShape),
                     color = Color.Red
                 ) {}
+            } else {
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.Normal)) {
+                            append("Last Login: " + lastLogin)
+                        }
+                    },
+                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     )
@@ -124,7 +136,8 @@ private fun ChatTopBarPreview() {
         onBackStackClicked = {  },
         name = "John Doe",
         profilePicture = "",
-        online = true,
-        isTyping = true
+        online = false,
+        isTyping = true,
+        lastLogin = "12:00 AM"
     )
 }

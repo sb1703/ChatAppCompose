@@ -38,6 +38,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.chatapp.R
 import com.example.chatapp.domain.model.Message
+import com.example.chatapp.domain.model.SeenBy
 import com.example.chatapp.domain.model.User
 
 @Composable
@@ -60,7 +61,13 @@ fun ChatContent(
                         ChatItem(
                             text = it1,
                             onSendClicked = { /*TODO*/ },
-                            dateTime = it.time
+                            dateTime = it.time,
+                            seen = checkIfSeen(
+                                seenBy = it.seenBy,
+                                currentUserId = currentUserId,
+                                chatUserId = chatUser.userId.toString(),
+                                authorUserId = it.author
+                            )
                         )
                     } ?: Log.d("debugging","messageText null")
                 } else {
@@ -70,7 +77,13 @@ fun ChatContent(
                             onSendClicked = { /*TODO*/ },
                             author = chatUser.name,
                             profilePhoto = chatUser.profilePhoto,
-                            dateTime = it.time
+                            dateTime = it.time,
+                            seen = checkIfSeen(
+                                seenBy = it.seenBy,
+                                currentUserId = currentUserId,
+                                chatUserId = chatUser.userId.toString(),
+                                authorUserId = it.author
+                            )
                         )
                     } ?: Log.d("debugging","messageText null")
                 }
@@ -83,7 +96,8 @@ fun ChatContent(
 fun ChatItem(
     text: String,
     onSendClicked: () -> Unit,
-    dateTime: String
+    dateTime: String,
+    seen: Boolean
 ) {
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -120,6 +134,19 @@ fun ChatItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                if(seen) {
+                    Text(
+                        modifier = Modifier.padding(horizontal = 7.dp),
+                        text = buildAnnotatedString {
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Light)) {
+                                append("Seen")
+                            }
+                        },
+                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }
@@ -131,7 +158,8 @@ fun OppChatItem(
     onSendClicked: () -> Unit,
     author: String,
     profilePhoto: String,
-    dateTime: String
+    dateTime: String,
+    seen: Boolean
 ) {
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -192,6 +220,19 @@ fun OppChatItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                if(seen) {
+                    Text(
+                        modifier = Modifier.padding(horizontal = 7.dp),
+                        text = buildAnnotatedString {
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Light)) {
+                                append("Seen")
+                            }
+                        },
+                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }
@@ -233,7 +274,8 @@ private fun ChatItemPreview() {
     ChatItem(
         text = "textssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssh",
         onSendClicked = {},
-        dateTime = "3:25 PM"
+        dateTime = "3:25 PM",
+        seen = true
     )
 }
 
@@ -246,7 +288,8 @@ private fun OppChatItemPreview() {
         onSendClicked = {},
         author = "Shreyas 123",
         profilePhoto = "",
-        dateTime = "3:25 PM"
+        dateTime = "3:25 PM",
+        seen = true
     )
 }
 
@@ -257,4 +300,17 @@ private fun ChatPreview() {
         text = "textssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssh",
         onSendClicked = {}
     )
+}
+
+private fun checkIfSeen(
+    seenBy: List<SeenBy>?,
+    currentUserId: String,
+    chatUserId: String,
+    authorUserId: String?
+): Boolean {
+    return if(authorUserId == currentUserId) {
+        chatUserId in (seenBy?.map { it.userId } ?: emptyList())
+    } else {
+        currentUserId in (seenBy?.map { it.userId } ?: emptyList())
+    }
 }

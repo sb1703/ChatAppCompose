@@ -1,8 +1,6 @@
 package com.example.chatapp.domain.model
 
-import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
-import kotlinx.datetime.Instant
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -12,8 +10,15 @@ data class Message(
     val messageId: String? = null,
     val author: String? = null,
     val receiver: List<String?> = emptyList(),
+    val seenBy: List<SeenBy> = emptyList(),
     val messageText: String? = null,
     val time: String = getCurrentTimeIn12HourFormat()
+)
+
+@Serializable
+data class SeenBy(
+    val userId: String,
+    val seenAt: String
 )
 
 fun getCurrentTimeIn12HourFormat(): String {

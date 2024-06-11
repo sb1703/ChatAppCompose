@@ -1,14 +1,13 @@
 package com.example.chatapp.presentation.screen.profile
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.chatapp.connectivity.ConnectivityObserver
+import com.example.chatapp.connectivity.NetworkConnectivityObserver
 import com.example.chatapp.data.remote.ChatSocketService
-import com.example.chatapp.domain.model.ChatEvent
 import com.example.chatapp.domain.model.User
 import com.example.chatapp.domain.model.UserUpdate
 import com.example.chatapp.domain.repository.Repository
-import com.example.chatapp.util.RequestState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,9 +18,13 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
+    private val connectivity: NetworkConnectivityObserver,
     private val repository: Repository,
     private val chatSocketService: ChatSocketService
 ): ViewModel() {
+
+    private val _network = MutableStateFlow(ConnectivityObserver.Status.Unavailable)
+    val network = _network.asStateFlow()
 
     private val _nameQuery = MutableStateFlow("")
     val nameQuery = _nameQuery.asStateFlow()
@@ -33,38 +36,16 @@ class ProfileViewModel @Inject constructor(
     val currentUser = _currentUser.asStateFlow()
 
     init {
-        getCurrentUser()
         viewModelScope.launch {
-            _currentUser.collectLatest {
-                if (it.userId != null) {
-                    updateName(currentUser.value.name)
-//                    connectToChat()
-                }
+            connectivity.observe().collectLatest {
+                _network.value = it
             }
         }
     }
 
-    fun getCurrentUser() {
-        viewModelScope.launch {
+    suspend fun getCurrentUser() {
+        viewModelScope.launch(Dispatchers.IO) {
             _currentUser.value = repository.getUserInfo().user!!
-        }
-    }
-
-    fun connectToChat() {
-        viewModelScope.launch {
-            Log.d("debugging2","userId: ${currentUser.value.userId} connected profile")
-            val result = currentUser.value.userId?.let { chatSocketService.initSession(it) }
-            when(result) {
-                is RequestState.Success -> {
-                    Log.d("debugging2","result is success")
-                }
-                is RequestState.Error -> {
-                    Log.d("debugging","result is error")
-                }
-                else -> {
-                    Log.d("debugging","result is else")
-                }
-            }
         }
     }
 
@@ -88,23 +69,15 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun setOnlineFalse() {
-        viewModelScope.launch {
-            chatSocketService.sendOnline(false)
-        }
-    }
-
     fun disconnect() {
-        Log.d("disconnect","disconnecting profile")
         viewModelScope.launch {
             chatSocketService.closeSession()
         }
     }
 
-    override fun onCleared() {
-        super.onCleared()
-//        Log.d("disconnect","onCleared profile")
+//    override fun onCleared() {
+//        super.onCleared()
 //        disconnect()
-    }
+//    }
 
 }
