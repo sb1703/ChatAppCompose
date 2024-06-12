@@ -8,5 +8,6 @@ data class ApiRequest(
     val user: User? = null,
     val message: Message? = null,
     val userId: String? = null,
-    val name: String? = null
+    val name: String? = null,
+    val fcmToken: FCMToken? = null
 )

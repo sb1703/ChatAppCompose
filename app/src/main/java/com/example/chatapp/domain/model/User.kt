@@ -14,5 +14,12 @@ data class User(
     val list: List<String> = emptyList(),
     val online: Boolean = false,
     val lastLogin: String? = null,
-    val socket: WebSocketSession? = null
+    val socket: WebSocketSession? = null,
+    val fcmToken: FCMToken? = null
+)
+
+@Serializable
+data class FCMToken(
+    val token: String,
+    val timestamp: Long = System.currentTimeMillis()
 )

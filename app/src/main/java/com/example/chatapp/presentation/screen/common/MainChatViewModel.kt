@@ -10,13 +10,18 @@ import com.example.chatapp.connectivity.NetworkConnectivityObserver
 import com.example.chatapp.data.remote.ChatSocketService
 import com.example.chatapp.domain.model.ApiRequest
 import com.example.chatapp.domain.model.ChatEvent
+import com.example.chatapp.domain.model.FCMToken
 import com.example.chatapp.domain.model.Message
+import com.example.chatapp.domain.model.NotificationBody
 import com.example.chatapp.domain.model.SeenBy
+import com.example.chatapp.domain.model.SendMessageDto
 import com.example.chatapp.domain.model.User
 import com.example.chatapp.domain.model.UserItem
 import com.example.chatapp.domain.model.getCurrentTimeIn12HourFormat
 import com.example.chatapp.domain.repository.Repository
 import com.example.chatapp.util.RequestState
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.ktx.messaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,6 +32,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -73,6 +79,9 @@ class MainChatViewModel @Inject constructor(
 
     private val _isTyping = MutableStateFlow(false)
     val isTyping = _isTyping.asStateFlow()
+
+    private val _isFCMTokenSentToServer = MutableStateFlow(false)
+    val isFCMTokenSentToServer = _isFCMTokenSentToServer.asStateFlow()
 
     private var job: Job? = null
 
@@ -365,6 +374,7 @@ class MainChatViewModel @Inject constructor(
                                 updateFetchedChatList(currentUser.userId.toString(), currentChatText, listOf(chatId.value), messageId)
                                 updateFetchedUserList(currentUser.userId.toString(), currentChatText, listOf(chatId.value), true, messageId)
                                 chatSocketService.sendMessage(message = currentChatText, receiverUserIds = listOf(chatId.value), messageId = messageId)
+                                sendMessageNotification(currentChatText)
                             }
                         }
                     }
@@ -477,6 +487,10 @@ class MainChatViewModel @Inject constructor(
         _chatText.value = ""
     }
 
+    fun setIsFCMTokenSentToServerToTrue() {
+        _isFCMTokenSentToServer.value = true
+    }
+
     suspend fun fetchChats(){
         viewModelScope.launch(Dispatchers.IO) {
             _fetchedChat.value = repository.fetchChats(
@@ -490,6 +504,42 @@ class MainChatViewModel @Inject constructor(
     suspend fun getUserInfoByUserId() {
         viewModelScope.launch(Dispatchers.IO) {
             _chatUser.value = repository.getUserInfoById(request = ApiRequest(userId = chatId.value)).user!!
+        }
+    }
+
+    fun sendMessageNotification(text: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            // CHAT SCREEN
+            val fcmToken = chatUser.value.fcmToken
+            if(chatId.value != "" && fcmToken != null) {
+                val messageDto = SendMessageDto(
+                    // for chatId get token
+                    to = fcmToken.token,
+                    notification = NotificationBody(
+                        title = currentUser.value.name,
+                        body = text
+                    )
+                )
+
+                try {
+                    repository.sendMessageNotification(messageDto)
+                } catch (e: Exception) {
+                    Log.e("notification", "Error in sending notification: ${e.message}", e)
+                }
+            }
+        }
+    }
+
+    suspend fun updateFCMTokenServer() {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.readFCMTokenState().collectLatest { token ->
+                repository.updateFCMToken(request = ApiRequest(
+                    fcmToken = FCMToken(
+                        token = token
+                    )
+                )
+                )
+            }
         }
     }
 

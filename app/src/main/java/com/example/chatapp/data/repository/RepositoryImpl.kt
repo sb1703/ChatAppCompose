@@ -11,6 +11,7 @@ import com.example.chatapp.data.remote.KtorApi
 import com.example.chatapp.domain.model.ApiRequest
 import com.example.chatapp.domain.model.ApiResponse
 import com.example.chatapp.domain.model.Message
+import com.example.chatapp.domain.model.SendMessageDto
 import com.example.chatapp.domain.model.User
 import com.example.chatapp.domain.model.UserItem
 import com.example.chatapp.domain.model.UserUpdate
@@ -33,6 +34,14 @@ class RepositoryImpl @Inject constructor(
 
     override fun readSignedInState(): Flow<Boolean> {
         return dataStoreOperations.readSignedInState()
+    }
+
+    override suspend fun saveFCMTokenState(token: String) {
+        dataStoreOperations.saveFCMTokenState(token = token)
+    }
+
+    override fun readFCMTokenState(): Flow<String> {
+        return dataStoreOperations.readFCMTokenState()
     }
 
     override suspend fun verifyTokenOnBackend(request: ApiRequest): ApiResponse {
@@ -179,6 +188,14 @@ class RepositoryImpl @Inject constructor(
 
     override suspend fun searchUsers(request: ApiRequest): Flow<PagingData<UserItem>> {
         return remote.searchUsers(request = request)
+    }
+
+    override suspend fun sendMessageNotification(messageDto: SendMessageDto) {
+        return ktorApi.sendMessageNotification(body = messageDto)
+    }
+
+    override suspend fun updateFCMToken(request: ApiRequest): ApiResponse {
+        return ktorApi.updateFCMToken(request = request)
     }
 
 }

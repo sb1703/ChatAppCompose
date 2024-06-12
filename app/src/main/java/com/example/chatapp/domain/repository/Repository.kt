@@ -4,6 +4,7 @@ import androidx.paging.PagingData
 import com.example.chatapp.domain.model.ApiRequest
 import com.example.chatapp.domain.model.ApiResponse
 import com.example.chatapp.domain.model.Message
+import com.example.chatapp.domain.model.SendMessageDto
 import com.example.chatapp.domain.model.User
 import com.example.chatapp.domain.model.UserItem
 import com.example.chatapp.domain.model.UserUpdate
@@ -12,6 +13,8 @@ import kotlinx.coroutines.flow.Flow
 interface Repository {
     suspend fun saveSignedInState(signedIn: Boolean)
     fun readSignedInState(): Flow<Boolean>
+    suspend fun saveFCMTokenState(token: String)
+    fun readFCMTokenState(): Flow<String>
     suspend fun verifyTokenOnBackend(request: ApiRequest): ApiResponse
     suspend fun getUserInfo(): ApiResponse
     suspend fun getUserInfoById(request: ApiRequest): ApiResponse
@@ -27,4 +30,6 @@ interface Repository {
 //    suspend fun fetchUsers(): Flow<PagingData<User>>
     suspend fun fetchUsers(): ApiResponse
     suspend fun searchUsers(request: ApiRequest): Flow<PagingData<UserItem>>
+    suspend fun sendMessageNotification(messageDto: SendMessageDto)
+    suspend fun updateFCMToken(request: ApiRequest): ApiResponse
 }

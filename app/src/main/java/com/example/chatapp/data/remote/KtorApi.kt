@@ -2,6 +2,7 @@ package com.example.chatapp.data.remote
 
 import com.example.chatapp.domain.model.ApiRequest
 import com.example.chatapp.domain.model.ApiResponse
+import com.example.chatapp.domain.model.SendMessageDto
 import com.example.chatapp.domain.model.UserUpdate
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -83,5 +84,15 @@ interface KtorApi {
 
     @GET("/sign_out")
     suspend fun clearSession(): ApiResponse
+
+    @POST("/send_message_notification")
+    suspend fun sendMessageNotification(
+        @Body body: SendMessageDto
+    )
+
+    @POST("/update_fcm_token")
+    suspend fun updateFCMToken(
+        @Body request: ApiRequest
+    ): ApiResponse
 
 }

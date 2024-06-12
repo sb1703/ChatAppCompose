@@ -59,8 +59,13 @@ fun SetupNavGraph(
                 val network by viewModel.network.collectAsState()
                 val currentUser by viewModel.currentUser.collectAsState()
                 val fetchedUser by viewModel.fetchedUser.collectAsState()
+                val isFCMTokenSentToServer by viewModel.isFCMTokenSentToServer.collectAsState()
                 LaunchedEffect(key1 = network, key2 = currentUser) {
                     if (network == ConnectivityObserver.Status.Available) {
+                        if(!isFCMTokenSentToServer) {
+                            viewModel.updateFCMTokenServer()
+                            viewModel.setIsFCMTokenSentToServerToTrue()
+                        }
                         if(currentUser.userId == null) {
                             viewModel.getCurrentUser()
                         } else {
