@@ -1,5 +1,6 @@
 package com.example.chatapp.presentation.screen.chat
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -105,7 +106,7 @@ fun ChatTopBar(
             }
         },
         actions = {
-            if(online) {
+            AnimatedVisibility(visible = online) {
                 Surface(
                     modifier = Modifier
                         .padding(end = 7.dp)
@@ -113,15 +114,16 @@ fun ChatTopBar(
                         .clip(CircleShape),
                     color = Color.Red
                 ) {}
-            } else {
+            }
+            AnimatedVisibility(visible = !online) {
                 Text(
                     text = buildAnnotatedString {
                         withStyle(style = SpanStyle(fontWeight = FontWeight.Normal)) {
-                            append("Last Login: " + lastLogin)
+                            append("Last Login: \n " + lastLogin)
                         }
                     },
                     fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }

@@ -1,6 +1,7 @@
 package com.example.chatapp.presentation.screen.main
 
 import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -69,6 +70,7 @@ fun MainContent(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun UserList(
     userListData: UserListData,
@@ -91,6 +93,10 @@ fun UserList(
                             val authorName = message?.author?.let { it2 -> getAuthorName(it2) }
                             if(message?.messageText != null) {
                                 UserItem(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(75.dp)
+                                        .animateItemPlacement(),
                                     title = it.name,
                                     description = "${authorName}: ${message.messageText}",
                                     time = message.time,
@@ -106,6 +112,10 @@ fun UserList(
                                 )
                             } else {
                                 UserItem(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(75.dp)
+                                        .animateItemPlacement(),
                                     title = it.name,
                                     description = "",
                                     time = "",
@@ -140,6 +150,10 @@ fun UserList(
                     Log.d("lazyColumn", "userId: ${user.userId}")
 
                     UserItem(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(75.dp)
+                            .animateItemPlacement(),
                         title = user.name,
                         description = "${authorName}: ${message?.messageText.orEmpty()}",
                         time = message?.time.orEmpty(),
@@ -230,6 +244,7 @@ fun handlePagingResult(
 
 @Composable
 fun UserItem(
+    modifier: Modifier,
     title: String,
     description: String,
     time: String,
@@ -238,9 +253,7 @@ fun UserItem(
     navigationToChatScreen: (String) -> Unit
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(75.dp)
+        modifier = modifier
             .clickable {
                 navigationToChatScreen("")
             },
@@ -334,6 +347,9 @@ fun UserItem(
 @Composable
 private fun UserItemPreview() {
     UserItem(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(75.dp),
         title = "Title",
         description = "Descriptionsifjskdlfjfjkjfdkjfksjdkjkfjskfjkjfkjfjsdjfjskfjslkfjfkdjkfjskfjfskdjfldkfksldfdfjskjdf",
         time = "3:25 PM",

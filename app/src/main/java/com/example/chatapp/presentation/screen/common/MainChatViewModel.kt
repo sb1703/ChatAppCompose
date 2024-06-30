@@ -20,8 +20,6 @@ import com.example.chatapp.domain.model.UserItem
 import com.example.chatapp.domain.model.getCurrentTimeIn12HourFormat
 import com.example.chatapp.domain.repository.Repository
 import com.example.chatapp.util.RequestState
-import com.google.firebase.ktx.Firebase
-import com.google.firebase.messaging.ktx.messaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -32,7 +30,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -516,8 +513,10 @@ class MainChatViewModel @Inject constructor(
                     // for chatId get token
                     to = fcmToken.token,
                     notification = NotificationBody(
+                        userId = currentUser.value.userId ?: "1",
                         title = currentUser.value.name,
-                        body = text
+                        body = text,
+                        profilePhotoUri = currentUser.value.profilePhoto
                     )
                 )
 

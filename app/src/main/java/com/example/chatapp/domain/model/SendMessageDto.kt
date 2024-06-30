@@ -10,6 +10,8 @@ data class SendMessageDto(
 
 @Serializable
 data class NotificationBody(
+    val userId: String,
     val title: String,
-    val body: String
+    val body: String,
+    val profilePhotoUri: String
 )

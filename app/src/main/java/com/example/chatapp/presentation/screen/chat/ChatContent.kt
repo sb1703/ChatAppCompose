@@ -1,6 +1,8 @@
 package com.example.chatapp.presentation.screen.chat
 
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -41,6 +46,7 @@ import com.example.chatapp.domain.model.Message
 import com.example.chatapp.domain.model.SeenBy
 import com.example.chatapp.domain.model.User
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatContent(
     chats: List<Message>,
@@ -59,6 +65,9 @@ fun ChatContent(
                 if(it.author == currentUserId){
                     it.messageText?.let { it1 ->
                         ChatItem(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .animateItemPlacement(),
                             text = it1,
                             onSendClicked = { /*TODO*/ },
                             dateTime = it.time,
@@ -73,6 +82,9 @@ fun ChatContent(
                 } else {
                     it.messageText?.let { it1 ->
                         OppChatItem(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .animateItemPlacement(),
                             text = it1,
                             onSendClicked = { /*TODO*/ },
                             author = chatUser.name,
@@ -94,13 +106,14 @@ fun ChatContent(
 
 @Composable
 fun ChatItem(
+    modifier: Modifier,
     text: String,
     onSendClicked: () -> Unit,
     dateTime: String,
     seen: Boolean
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
         contentAlignment = Alignment.CenterEnd
     ) {
         Column(
@@ -125,6 +138,8 @@ fun ChatItem(
                 horizontalArrangement = Arrangement.End
             ) {
                 Text(
+                    modifier = Modifier
+                        .padding(end = 5.dp),
                     text = buildAnnotatedString {
                         withStyle(style = SpanStyle(fontWeight = FontWeight.Light)) {
                             append(dateTime)
@@ -134,17 +149,11 @@ fun ChatItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if(seen) {
-                    Text(
-                        modifier = Modifier.padding(horizontal = 7.dp),
-                        text = buildAnnotatedString {
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.Light)) {
-                                append("Seen")
-                            }
-                        },
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                AnimatedVisibility(visible = seen) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Seen",
+                        tint = Color.Blue
                     )
                 }
             }
@@ -154,6 +163,7 @@ fun ChatItem(
 
 @Composable
 fun OppChatItem(
+    modifier: Modifier,
     text: String,
     onSendClicked: () -> Unit,
     author: String,
@@ -162,7 +172,7 @@ fun OppChatItem(
     seen: Boolean
 ) {
     Box(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
         contentAlignment = Alignment.CenterStart
     ) {
         Column(
@@ -211,6 +221,8 @@ fun OppChatItem(
                 horizontalArrangement = Arrangement.End
             ) {
                 Text(
+                    modifier = Modifier
+                        .padding(end = 5.dp),
                     text = buildAnnotatedString {
                         withStyle(style = SpanStyle(fontWeight = FontWeight.Light)) {
                             append(dateTime)
@@ -220,17 +232,11 @@ fun OppChatItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if(seen) {
-                    Text(
-                        modifier = Modifier.padding(horizontal = 7.dp),
-                        text = buildAnnotatedString {
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.Light)) {
-                                append("Seen")
-                            }
-                        },
-                        fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                AnimatedVisibility(visible = seen) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Seen",
+                        tint = Color.Blue
                     )
                 }
             }
@@ -275,7 +281,8 @@ private fun ChatItemPreview() {
         text = "textssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssh",
         onSendClicked = {},
         dateTime = "3:25 PM",
-        seen = true
+        seen = true,
+        modifier = Modifier.fillMaxWidth()
     )
 }
 
@@ -289,7 +296,8 @@ private fun OppChatItemPreview() {
         author = "Shreyas 123",
         profilePhoto = "",
         dateTime = "3:25 PM",
-        seen = true
+        seen = true,
+        modifier = Modifier.fillMaxWidth()
     )
 }
 
